@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4efe6;
+  --foreground: #23231f;
+  
+  /* ─── Color Tokens (DESIGN.md) ─── */
+  --color-canvas: #f4efe6;
+  --color-paper: #fbf7ef;
+  --color-stone: #e8e0d3;
+  --color-mist: #eef0e8;
+  --color-ink: #23231f;
+  --color-ink-soft: #383730;
+  --color-muted: #5c5649;
+  --color-sage: #71836a;
+  --color-clay: #b9824f;
+  --color-rose: #b47a72;
+  --color-sky: #6f8791;
+
+  --color-surface: #fbf7ef;
+  --color-surface-soft: #f4efe6;
+  --color-surface-ink: #171713;
+  --color-text-primary: #23231f;
+  --color-text-secondary: #3d3a33;
+  --color-text-muted: #5c5649;
+  --color-border-soft: #ded6c8;
+  --color-accent-ready: #71836a;
+  --color-accent-attention: #b9824f;
+  --color-accent-reflect: #b47a72;
+  --color-accent-info: #6f8791;
+
+  /* ─── Space Tokens ─── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ─── Radius Tokens ─── */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-primary);
+  --font-mono: var(--font-secondary);
+  --font-editorial: var(--font-editorial-src), Georgia, "Times New Roman", serif;
+
+  --color-canvas: var(--color-canvas);
+  --color-paper: var(--color-paper);
+  --color-stone: var(--color-stone);
+  --color-mist: var(--color-mist);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-muted: var(--color-muted);
+  --color-sage: var(--color-sage);
+  --color-clay: var(--color-clay);
+  --color-rose: var(--color-rose);
+  --color-sky: var(--color-sky);
+
+  --color-surface: var(--color-surface);
+  --color-surface-soft: var(--color-surface-soft);
+  --color-surface-ink: var(--color-surface-ink);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-border-soft: var(--color-border-soft);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(113, 131, 106, 0.25);
+  color: var(--color-ink);
+}
+
+/* ─── Editorial Typography ─── */
+.font-editorial {
+  font-family: var(--font-editorial-src), Georgia, "Times New Roman", serif;
+}
+
+/* Prevent iOS from zooming in when an input is focused.
+   iOS zooms if font-size < 16px. We force it to 16px and reset after. */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* ─── Refined Focus States ─── */
+*:focus-visible {
+  outline: 2px solid rgba(113, 131, 106, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(113, 131, 106, 0.4);
+  outline-offset: 1px;
+}
+
+/* Utilities for mobile responsiveness and hiding scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.glass-card {
+  background: rgba(251, 247, 239, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(35, 35, 31, 0.08);
+}
+
+.dark-glass {
+  background: rgba(23, 23, 19, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(251, 247, 239, 0.12);
+}
+
+/* Swipeable card stack: prevent scroll fighting on mobile. */
+.swipe-card {
+  touch-action: pan-y;
+}
+
+/* ─── Subtle Ambient Glow ─── */
+.ambient-glow {
+  position: relative;
+}
+.ambient-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(113, 131, 106, 0.08),
+    rgba(185, 130, 79, 0.05) 50%,
+    rgba(180, 122, 114, 0.04)
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Warm grain texture (CSS only) ─── */
+.grain-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* Reduced motion: honour the OS "reduce motion" preference for everything driven
+   by CSS (animate-pulse/spin, transitions, smooth scroll). framer-motion is handled
+   separately via <MotionConfig reducedMotion="user"> in AppShell. We collapse
+   durations to ~0 rather than removing them so state changes still apply instantly
+   (an instant crossfade), per WCAG 2.3.3 / 2.2.2. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

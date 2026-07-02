@@ -1,0 +1,25 @@
+node_modules
+dist
+dist-ssr
+*.local
+.vscode
+.idea
+.DS_Store
+*.log
+.git
+.gitignore
+.env.example
+.env
+
+# Next.js build directories
+.next/
+out/
+
+# Capacitor native app folders
+android/
+ios/
+capacitor.config.ts
+MOBILE_APP_SETUP.md
+
+# Generated presentation files
+til_proposal_*.pptx

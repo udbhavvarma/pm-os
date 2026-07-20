@@ -9,6 +9,8 @@ import { useWorkspace } from "@/context/WorkspaceContext";
 import type { Capture } from "@/lib/workspace";
 import { authedFetch } from "@/lib/api";
 import { loadAudioBlob } from "@/lib/audioStore";
+import { usePersistentState } from "@/hooks/usePersistentState";
+import { useFeedback } from "@/context/FeedbackContext";
 
 function CaptureContentEditor({ capture, save }: { capture: Capture; save: (value: string) => Promise<void> }) {
   const [value, setValue] = useState(capture.rawContent);
@@ -17,9 +19,10 @@ function CaptureContentEditor({ capture, save }: { capture: Capture; save: (valu
 
 export default function InboxPage() {
   const { captures, loaded, updateCapture, deleteCapture, convertCaptureToAction, convertCaptureToItem } = useWorkspace();
-  const [query, setQuery] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { notify } = useFeedback();
+  const [query, setQuery] = usePersistentState("inbox-query", "");
+  const [showArchived, setShowArchived] = usePersistentState("inbox-show-archived", false);
+  const [selectedId, setSelectedId] = usePersistentState<string | null>("inbox-selected", null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [processingError, setProcessingError] = useState("");
 
@@ -40,13 +43,13 @@ export default function InboxPage() {
         if (!blob) throw new Error("The saved recording could not be loaded.");
         const formData = new FormData();
         formData.append("audio", new File([blob], "capture.webm", { type: blob.type || "audio/webm" }));
-        const transcriptionResponse = await authedFetch("/pm-os/api/intelligence/transcribe", { method: "POST", body: formData });
+        const transcriptionResponse = await authedFetch("/api/intelligence/transcribe", { method: "POST", body: formData });
         const transcription = await transcriptionResponse.json();
         if (!transcriptionResponse.ok) throw new Error(transcription.error);
         input = transcription.transcript;
         await updateCapture(capture.id, { transcript: input });
       }
-      const response = await authedFetch("/pm-os/api/intelligence/process-capture", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ input }) });
+      const response = await authedFetch("/api/intelligence/process-capture", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ input }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       await updateCapture(capture.id, {
@@ -57,8 +60,9 @@ export default function InboxPage() {
         aiThemes: result.themes,
         aiDecisions: result.decisions,
       });
+      notify(capture.inputType === "voice" && !capture.transcript ? "Auxiliaire transcribed and enriched the recording." : "Auxiliaire enriched the capture.");
     } catch (error) {
-      setProcessingError(error instanceof Error ? error.message : "Groq processing is unavailable. The capture remains saved.");
+      setProcessingError(error instanceof Error ? error.message : "Auxiliaire could not process this right now. The capture remains saved.");
     } finally { setProcessingId(null); }
   };
 
@@ -110,8 +114,8 @@ export default function InboxPage() {
                     )}
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button type="button" disabled={processingId === capture.id} onClick={() => processCapture(capture)} className="flex items-center gap-1.5 rounded-xl border border-[#71836a]/30 bg-[#eef0e8] px-3 py-2.5 text-xs font-semibold text-[#4d5e48] disabled:opacity-50">{processingId === capture.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} {capture.aiSummary ? "Process again" : capture.inputType === "voice" && !capture.transcript ? "Transcribe & process" : "Process with Auxiliaire"}</button>
-                      <button type="button" onClick={() => convertCaptureToAction(capture.id)} className="rounded-xl bg-[#23231f] px-3 py-2.5 text-xs font-semibold text-white">Turn into action</button>
-                      <button type="button" onClick={() => convertCaptureToItem(capture.id, "knowledge")} className="rounded-xl border border-[#71836a]/30 bg-[#eef0e8] px-3 py-2.5 text-xs font-semibold text-[#4d5e48]">Save as knowledge</button>
+                      <button type="button" onClick={async () => { await convertCaptureToAction(capture.id); notify("Action created and linked to this capture."); }} className="rounded-xl bg-[#23231f] px-3 py-2.5 text-xs font-semibold text-white">Turn into action</button>
+                      <button type="button" onClick={async () => { await convertCaptureToItem(capture.id, "knowledge"); notify("Saved to Library with its source attached."); }} className="rounded-xl border border-[#71836a]/30 bg-[#eef0e8] px-3 py-2.5 text-xs font-semibold text-[#4d5e48]">Save as knowledge</button>
                       <button type="button" onClick={() => updateCapture(capture.id, { status: "archived" })} className="flex items-center gap-1.5 rounded-xl border border-[#ded6c8] px-3 py-2.5 text-xs font-semibold text-[#5c5649]"><Archive className="h-3.5 w-3.5" /> Archive</button>
                       <button type="button" onClick={() => deleteCapture(capture.id)} className="ml-auto flex items-center gap-1.5 px-2 py-2.5 text-xs font-semibold text-[#a05f58]"><Trash2 className="h-3.5 w-3.5" /> Delete</button>
                     </div>

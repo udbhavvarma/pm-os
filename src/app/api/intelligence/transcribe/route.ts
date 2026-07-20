@@ -10,11 +10,11 @@ async function postHandler(request: Request) {
   const audio = formData.get("audio");
   if (!(audio instanceof File)) return NextResponse.json({ error: "Audio is required." }, { status: 400 });
   const provider = new IntelligenceService().provider();
-  if (!await provider.isAvailable()) return NextResponse.json({ error: "GROQ_API_KEY is not configured. The recording remains saved." }, { status: 503 });
+  if (!await provider.isAvailable()) return NextResponse.json({ error: "Auxiliaire intelligence is currently unavailable. The recording remains saved." }, { status: 503 });
   try {
     return NextResponse.json({ transcript: await provider.transcribe(audio) });
   } catch (error) {
-    console.error("Groq transcription failed:", error);
-    return NextResponse.json({ error: "Groq could not transcribe this recording. The audio remains saved." }, { status: 502 });
+    console.error("Auxiliaire transcription failed:", error);
+    return NextResponse.json({ error: "Auxiliaire could not transcribe this recording. The audio remains saved." }, { status: 502 });
   }
 }

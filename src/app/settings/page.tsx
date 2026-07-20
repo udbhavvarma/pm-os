@@ -5,30 +5,30 @@ import { CheckCircle2, Cloud, LogOut, TriangleAlert } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { authedFetch } from "@/lib/api";
 
-type GroqStatus = { configured: boolean; provider: string; model: string };
+type IntelligenceStatus = { configured: boolean };
 
 export default function SettingsPage() {
   const { userData, user, logout } = useAuth();
-  const [status, setStatus] = useState<GroqStatus | null>(null);
+  const [status, setStatus] = useState<IntelligenceStatus | null>(null);
 
   useEffect(() => {
-    authedFetch("/pm-os/api/intelligence/status")
-      .then(async (response) => response.ok ? setStatus(await response.json()) : setStatus({ configured: false, provider: "Groq Cloud", model: "Unavailable" }))
-      .catch(() => setStatus({ configured: false, provider: "Groq Cloud", model: "Unavailable" }));
+    authedFetch("/api/intelligence/status")
+      .then(async (response) => response.ok ? setStatus(await response.json()) : setStatus({ configured: false }))
+      .catch(() => setStatus({ configured: false }));
   }, []);
 
   return (
     <main className="min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
       <div className="mx-auto max-w-3xl">
-        <header><p className="section-label">Personal and contained</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Settings</h1><p className="mt-2 text-sm text-[#5c5649]">Auxiliaire uses Groq Cloud as its intelligence provider.</p></header>
+        <header><p className="section-label">Personal and contained</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Settings</h1><p className="mt-2 text-sm text-[#5c5649]">Manage your Auxiliaire experience and account.</p></header>
         <section className="mt-7 rounded-[20px] border border-[#ded6c8] bg-[#fbf7ef] p-5">
           <div className="flex items-start gap-4">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eef0e8]"><Cloud className="h-5 w-5 text-[#71836a]" /></span>
-            <div className="min-w-0 flex-1"><p className="section-label">Primary intelligence</p><h2 className="mt-1 font-editorial text-xl">Groq Cloud</h2><p className="mt-2 text-xs leading-5 text-[#5c5649]">Capture processing, contextual questions, daily guidance, and voice transcription all use your server-side Groq API key.</p></div>
+            <div className="min-w-0 flex-1"><p className="section-label">Auxiliaire intelligence</p><h2 className="mt-1 font-editorial text-xl">Ready when you need it</h2><p className="mt-2 text-xs leading-5 text-[#5c5649]">Auxiliaire can process captures, answer contextual questions, offer daily guidance, research the web, and transcribe voice notes.</p></div>
           </div>
           <div className={`mt-5 flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold ${status?.configured ? "bg-[#eef0e8] text-[#4d5e48]" : "bg-[#fff1ef] text-[#8d5149]"}`}>
             {status?.configured ? <CheckCircle2 className="h-4 w-4" /> : <TriangleAlert className="h-4 w-4" />}
-            {!status ? "Checking Groq configuration…" : status.configured ? `Configured · ${status.model}` : "GROQ_API_KEY is not configured"}
+            {!status ? "Checking Auxiliaire…" : status.configured ? "Auxiliaire is ready" : "Auxiliaire intelligence is currently unavailable"}
           </div>
         </section>
         <section className="mt-5 rounded-[20px] border border-[#ded6c8] bg-[#fbf7ef] p-5">

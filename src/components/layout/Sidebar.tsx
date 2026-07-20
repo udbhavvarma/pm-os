@@ -13,6 +13,7 @@ import {
   IconKnowledge,
   IconReview,
 } from "@/components/ui/Icons";
+import NavPendingIndicator from "./NavPendingIndicator";
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
@@ -88,6 +89,7 @@ export default function Sidebar() {
                 )}
               />
               <span>{item.label}</span>
+              <NavPendingIndicator />
             </Link>
           );
         })}

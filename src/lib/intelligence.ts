@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { ItemType, SuggestedAction } from "@/lib/workspace";
+import type { ItemType, SuggestedAction, WebSource } from "@/lib/workspace";
 
 export interface ProcessedCapture {
   title: string;
@@ -15,9 +15,11 @@ export interface IntelligenceProvider {
   processCapture(input: string): Promise<ProcessedCapture>;
   answer(input: { question: string; context: string[] }): Promise<string>;
   transcribe(audio: File): Promise<string>;
+  research(input: { query: string; context?: string }): Promise<{ answer: string; sources: WebSource[] }>;
 }
 
 export class GroqProvider implements IntelligenceProvider {
+  private apiKey = process.env.GROQ_API_KEY || "missing";
   private client = new OpenAI({
     apiKey: process.env.GROQ_API_KEY || "missing",
     baseURL: "https://api.groq.com/openai/v1",
@@ -68,7 +70,7 @@ Keep the title short, summary concise, and actions concrete. Only include dueAt 
         { role: "user", content: `Context:\n${input.context.join("\n\n")}\n\nQuestion: ${input.question}` },
       ],
     });
-    return response.choices[0]?.message.content?.trim() || "Groq did not return a response.";
+    return response.choices[0]?.message.content?.trim() || "Auxiliaire did not return a response.";
   }
 
   async transcribe(audio: File) {
@@ -80,6 +82,71 @@ Keep the title short, summary concise, and actions concrete. Only include dueAt 
       prompt: "A personal voice capture containing thoughts, tasks, decisions, questions, or notes.",
     });
     return result.text.trim();
+  }
+
+  async research(input: { query: string; context?: string }) {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+        "Groq-Model-Version": "latest",
+      },
+      body: JSON.stringify({
+        model: process.env.GROQ_WEB_MODEL || "groq/compound-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You enrich a private knowledge library with current, verifiable information. Search the web when useful. Clearly separate: What is current, Why it matters, What is worth saving, and Suggested next move. Stay under 350 words, preserve uncertainty, and cite sources inline.",
+          },
+          {
+            role: "user",
+            content: `${input.context ? `Existing library context:\n${input.context}\n\n` : ""}Research request: ${input.query}`,
+          },
+        ],
+        compound_custom: { tools: { enabled_tools: ["web_search", "visit_website"] } },
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!response.ok) throw new Error(`Groq web research failed with status ${response.status}`);
+    const data = await response.json() as {
+      choices?: Array<{ message?: { content?: string; executed_tools?: Array<{ search_results?: unknown }> } }>;
+    };
+    const message = data.choices?.[0]?.message;
+    const sources: WebSource[] = [];
+    const collect = (value: unknown) => {
+      if (Array.isArray(value)) {
+        value.forEach(collect);
+        return;
+      }
+      if (!value || typeof value !== "object") return;
+      const record = value as Record<string, unknown>;
+      const url = typeof record.url === "string" ? record.url : typeof record.link === "string" ? record.link : "";
+      if (/^https?:\/\//i.test(url)) {
+        sources.push({
+          title: typeof record.title === "string" ? record.title : new URL(url).hostname,
+          url,
+          snippet: typeof record.content === "string" ? record.content.slice(0, 240) : typeof record.snippet === "string" ? record.snippet.slice(0, 240) : undefined,
+        });
+      }
+      Object.values(record).forEach(collect);
+    };
+    message?.executed_tools?.forEach((tool) => collect(tool.search_results));
+    const answer = message?.content?.trim() || "No web research was returned.";
+    for (const match of answer.matchAll(/\[([^\]]+)]\((https?:\/\/[^)\s]+)\)/g)) {
+      sources.push({ title: match[1].trim() || new URL(match[2]).hostname, url: match[2] });
+    }
+    if (sources.length === 0) {
+      for (const match of answer.matchAll(/https?:\/\/[^\s)>\]]+/g)) {
+        const url = match[0].replace(/[.,;:!?]+$/, "");
+        try { sources.push({ title: new URL(url).hostname, url }); }
+        catch { /* Ignore malformed citation fragments. */ }
+      }
+    }
+    return {
+      answer,
+      sources: sources.filter((source, index, all) => all.findIndex((candidate) => candidate.url === source.url) === index).slice(0, 8),
+    };
   }
 }
 

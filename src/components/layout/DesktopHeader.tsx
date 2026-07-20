@@ -15,6 +15,8 @@ export default function DesktopHeader() {
     event.preventDefault();
     const q = query.trim();
     if (!q) return;
+    try { window.sessionStorage.setItem("auxiliaire-ui:library-query", JSON.stringify(q)); }
+    catch { /* Search still works through the URL. */ }
     router.push(`/library?q=${encodeURIComponent(q)}`);
     setQuery("");
   };

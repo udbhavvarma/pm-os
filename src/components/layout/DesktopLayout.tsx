@@ -4,6 +4,7 @@ import Sidebar from "./Sidebar";
 import DesktopHeader from "./DesktopHeader";
 import AppLifecycle from "./AppLifecycle";
 import RecordingDock from "@/components/recording/RecordingDock";
+import PageTransition from "./PageTransition";
 
 // Full desktop chrome: persistent sidebar + top header + a content region.
 // Only used on web at desktop widths when the user opts into it.
@@ -28,7 +29,7 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
             desktop pages render an `h-full` shell that fills this region and manages
             its own internal scrolling. */}
         <main className="relative min-h-0 flex-1 overflow-y-auto bg-[#f4efe6] @container">
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
 
@@ -37,4 +38,3 @@ export default function DesktopLayout({ children }: { children: React.ReactNode 
     </div>
   );
 }
-

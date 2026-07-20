@@ -7,6 +7,7 @@ import BottomNav from "./BottomNav";
 import AppLifecycle from "./AppLifecycle";
 import RecordingDock from "@/components/recording/RecordingDock";
 import { useViewMode } from "@/context/ViewModeContext";
+import PageTransition from "./PageTransition";
 
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -37,12 +38,9 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       <div className="relative z-10 flex h-full w-full flex-col overflow-hidden bg-[#fbf7ef] transition-all md:h-[90vh] md:max-h-[840px] md:w-[400px] md:rounded-[40px] md:border-[8px] md:border-[#252319] md:shadow-2xl md:shadow-black/50">
 
         {/* Simulated status bar — desktop preview only */}
-        <div className="hidden select-none items-center justify-between border-b border-[#e8dfd2] bg-[#f9f4eb] px-6 py-2 text-[10px] font-semibold tracking-widest text-[#6a6255] md:flex">
+        <div className="hidden select-none items-center justify-between border-b border-[#e8dfd2] bg-[#f9f4eb] px-6 py-1.5 text-[10px] font-semibold tracking-widest text-[#6a6255] md:flex">
           <span>9:41</span>
-          <div className="flex items-center gap-1.5">
-            <span className="h-1 w-1 rounded-full bg-[#71836a]" />
-            <span className="h-1.5 w-3 rounded-sm border border-current opacity-50" />
-          </div>
+          {canUseDesktop && <button type="button" onClick={() => setViewMode("desktop")} className="flex items-center gap-1.5 rounded-md px-2 py-1 tracking-normal text-[#5c5649] transition-colors hover:bg-[#e8e0d3] hover:text-[#23231f]" title="Switch to desktop view"><Monitor className="h-3 w-3" /> Desktop</button>}
         </div>
 
         {/* Main Content Viewport */}
@@ -52,7 +50,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         >
           {/* Readiness line — the product's ambient presence at the top of every content view */}
           <div className="readiness-line" aria-hidden="true" />
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
 
         {/* Sticky recording remote, visible across tabs while recording */}
@@ -61,23 +59,9 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         {/* Sticky Mobile-only Bottom Navigation */}
         <BottomNav />
 
-        {/* On web at desktop widths: on-screen toggle to switch to the dashboard view */}
-        {canUseDesktop && (
-          <button
-            type="button"
-            onClick={() => setViewMode("desktop")}
-            className="absolute bottom-20 right-3 z-[55] flex cursor-pointer items-center gap-1.5 rounded-full bg-[#23231f]/92 px-3 py-2 text-[11px] font-bold text-[#fbf7ef] shadow-lg shadow-black/25 backdrop-blur transition-all hover:bg-[#171713] active:scale-95"
-            title="Switch to dashboard (desktop) view"
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span>Desktop view</span>
-          </button>
-        )}
-
         {/* Portal target for modals, ensuring they stay inside the central frame and overlay the bottom nav */}
         <div id="mobile-modal-root" className="absolute inset-0 z-50 pointer-events-none" />
       </div>
     </div>
   );
 }
-

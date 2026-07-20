@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { secureGet, secureSave, type CaptureRecord } from "@/lib/db";
 import { useAuth } from "@/context/AuthContext";
 import { deleteAudio } from "@/lib/audioStore";
+import { useFeedback } from "@/context/FeedbackContext";
 import {
   buildReadinessBrief,
   dayId,
@@ -58,6 +59,7 @@ function normalizeCapture(record: Capture | CaptureRecord, userId: string): Capt
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
+  const { notify } = useFeedback();
   const userId = user?.uid ?? "local";
   const cacheKey = `workspace_${userId}`;
   const [data, setData] = useState<WorkspaceData>(emptyWorkspace);
@@ -137,12 +139,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     try {
       const reference = doc(db, "users", user.uid, collectionName, id);
       if (value === undefined) await deleteDoc(reference);
-      else await setDoc(reference, value);
+      else await setDoc(reference, value as Record<string, unknown>, { merge: true });
       setSyncStatus(navigator.onLine ? "saved" : "offline");
     } catch {
       setSyncStatus(navigator.onLine ? "error" : "offline");
+      notify("Saved on this device; cloud sync needs attention.", "error");
     }
-  }, [user]);
+  }, [notify, user]);
 
   const addCapture = useCallback(async (input: { inputType: Capture["inputType"]; rawContent: string; audioUrl?: string; transcript?: string }) => {
     const now = Date.now();
@@ -152,28 +155,24 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       status: "inbox", createdAt: now, updatedAt: now,
     };
     updateLocal((current) => ({ ...current, captures: [capture, ...current.captures] }));
-    await writeRemote("captures", capture.id, capture);
+    void writeRemote("captures", capture.id, capture);
     return capture;
   }, [updateLocal, userId, writeRemote]);
 
   const updateCapture = useCallback(async (id: string, updates: Partial<Capture>) => {
-    let updated: Capture | undefined;
+    const updated = { ...updates, updatedAt: Date.now() };
     updateLocal((current) => ({
       ...current,
-      captures: current.captures.map((capture) => {
-        if (capture.id !== id) return capture;
-        updated = { ...capture, ...updates, updatedAt: Date.now() };
-        return updated;
-      }),
+      captures: current.captures.map((capture) => capture.id === id ? { ...capture, ...updated } : capture),
     }));
-    if (updated) await writeRemote("captures", id, updated);
+    void writeRemote("captures", id, updated);
   }, [updateLocal, writeRemote]);
 
   const deleteCapture = useCallback(async (id: string) => {
     const audioUrl = data.captures.find((capture) => capture.id === id)?.audioUrl;
     updateLocal((current) => ({ ...current, captures: current.captures.filter((capture) => capture.id !== id) }));
-    await deleteAudio(audioUrl).catch(() => {});
-    await writeRemote("captures", id);
+    void deleteAudio(audioUrl).catch(() => {});
+    void writeRemote("captures", id);
   }, [data.captures, updateLocal, writeRemote]);
 
   const addAction = useCallback(async (title: string, input: Partial<Action> = {}) => {
@@ -183,21 +182,17 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       createdAt: now, updatedAt: now, ...input,
     };
     updateLocal((current) => ({ ...current, actions: [action, ...current.actions] }));
-    await writeRemote("actions", action.id, action);
+    void writeRemote("actions", action.id, action);
     return action;
   }, [updateLocal, userId, writeRemote]);
 
   const updateAction = useCallback(async (id: string, updates: Partial<Action>) => {
-    let updated: Action | undefined;
+    const updated = { ...updates, updatedAt: Date.now() };
     updateLocal((current) => ({
       ...current,
-      actions: current.actions.map((action) => {
-        if (action.id !== id) return action;
-        updated = { ...action, ...updates, updatedAt: Date.now() };
-        return updated;
-      }),
+      actions: current.actions.map((action) => action.id === id ? { ...action, ...updated } : action),
     }));
-    if (updated) await writeRemote("actions", id, updated);
+    void writeRemote("actions", id, updated);
   }, [updateLocal, writeRemote]);
 
   const addItem = useCallback(async (input: Pick<Item, "type" | "title" | "content"> & Partial<Item>) => {
@@ -206,21 +201,17 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       id: createId("item"), userId, tags: [], createdAt: now, updatedAt: now, ...input,
     };
     updateLocal((current) => ({ ...current, items: [item, ...current.items] }));
-    await writeRemote("items", item.id, item);
+    void writeRemote("items", item.id, item);
     return item;
   }, [updateLocal, userId, writeRemote]);
 
   const updateItem = useCallback(async (id: string, updates: Partial<Item>) => {
-    let updated: Item | undefined;
+    const updated = { ...updates, updatedAt: Date.now() };
     updateLocal((current) => ({
       ...current,
-      items: current.items.map((item) => {
-        if (item.id !== id) return item;
-        updated = { ...item, ...updates, updatedAt: Date.now() };
-        return updated;
-      }),
+      items: current.items.map((item) => item.id === id ? { ...item, ...updated } : item),
     }));
-    if (updated) await writeRemote("items", id, updated);
+    void writeRemote("items", id, updated);
   }, [updateLocal, writeRemote]);
 
   const convertCaptureToAction = useCallback(async (id: string, title?: string) => {
@@ -245,14 +236,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const updateDailyState = useCallback(async (updates: Partial<DailyState>) => {
     const id = dayId();
-    let state: DailyState = { id, userId, ...updates };
-    updateLocal((current) => {
-      const existing = current.dailyStates.find((entry) => entry.id === id);
-      state = { ...existing, id, userId, ...updates };
-      return { ...current, dailyStates: [state, ...current.dailyStates.filter((entry) => entry.id !== id)] };
-    });
-    await writeRemote("dailyStates", id, state);
-  }, [updateLocal, userId, writeRemote]);
+    const existing = data.dailyStates.find((entry) => entry.id === id);
+    const state: DailyState = { ...existing, id, userId, ...updates };
+    updateLocal((current) => ({ ...current, dailyStates: [state, ...current.dailyStates.filter((entry) => entry.id !== id)] }));
+    void writeRemote("dailyStates", id, state);
+  }, [data.dailyStates, updateLocal, userId, writeRemote]);
 
   const value = useMemo<WorkspaceContextValue>(() => ({
     ...data, loaded, syncStatus, brief: buildReadinessBrief(data), addCapture, updateCapture, deleteCapture,

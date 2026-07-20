@@ -10,6 +10,7 @@ import {
   IconReview,
   IconKnowledge,
 } from "@/components/ui/Icons";
+import NavPendingIndicator from "./NavPendingIndicator";
 
 const navItems = [
   { href: "/today", label: "Today", icon: IconToday },
@@ -63,6 +64,7 @@ export default function BottomNav() {
               >
                 {item.label}
               </span>
+              <NavPendingIndicator className="absolute -right-0.5 top-0 text-[#71836a]" />
             </Link>
           );
         }
@@ -91,6 +93,7 @@ export default function BottomNav() {
             >
               {item.label}
             </span>
+            <NavPendingIndicator className="absolute right-1.5 top-1.5 text-[#71836a]" />
           </Link>
         );
       })}

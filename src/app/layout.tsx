@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ViewModeProvider } from "@/context/ViewModeContext";
 import { RecordingProvider } from "@/context/RecordingContext";
 import { WorkspaceProvider } from "@/context/WorkspaceContext";
+import { FeedbackProvider } from "@/context/FeedbackContext";
 import "./globals.css";
 
 const primaryFont = Plus_Jakarta_Sans({
@@ -27,6 +28,10 @@ const editorialFont = Playfair_Display({
 export const metadata: Metadata = {
   title: "Auxiliaire",
   description: "Personal auxiliary intelligence for daily readiness.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -50,11 +55,13 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
           <ViewModeProvider>
-            <WorkspaceProvider>
-              <RecordingProvider>
-                <AppShell>{children}</AppShell>
-              </RecordingProvider>
-            </WorkspaceProvider>
+            <FeedbackProvider>
+              <WorkspaceProvider>
+                <RecordingProvider>
+                  <AppShell>{children}</AppShell>
+                </RecordingProvider>
+              </WorkspaceProvider>
+            </FeedbackProvider>
           </ViewModeProvider>
         </AuthProvider>
       </body>

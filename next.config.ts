@@ -3,11 +3,10 @@
 const isExport = process.env.STATIC_EXPORT === "true";
 
 const nextConfig: NextConfig = {
-  output: isExport ? "export" : "standalone",
-  basePath: isExport ? "" : "/pm-os",
-  env: {
-    NEXT_PUBLIC_BASE_PATH: isExport ? "" : "/pm-os",
+  experimental: {
+    viewTransition: true,
   },
+  output: isExport ? "export" : "standalone",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "ui-avatars.com" },

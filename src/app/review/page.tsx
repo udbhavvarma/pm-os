@@ -5,6 +5,7 @@ import { Archive, ArrowRight, Check, Clock3, Loader2, Pencil, RotateCcw, Sparkle
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { dayId, type Action, type Capture, type Item } from "@/lib/workspace";
 import { authedFetch } from "@/lib/api";
+import { useFeedback } from "@/context/FeedbackContext";
 
 type QueueEntry =
   | { kind: "capture"; record: Capture }
@@ -13,6 +14,7 @@ type QueueEntry =
 
 export default function ReviewPage() {
   const { captures, actions, items, dailyStates, loaded, updateCapture, updateAction, updateItem, convertCaptureToAction, addAction, updateDailyState } = useWorkspace();
+  const { notify } = useFeedback();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
@@ -37,6 +39,7 @@ export default function ReviewPage() {
     if (current.kind === "capture") await updateCapture(current.record.id, { status: "processed" });
     if (current.kind === "action") await updateAction(current.record.id, { updatedAt: Date.now() });
     if (current.kind === "item") await updateItem(current.record.id, { lastReviewedAt: Date.now(), reviewAt: Date.now() + 30 * 86400000 });
+    notify("Kept. Moving to the next review item.");
   };
   const snooze = async () => {
     if (!current) return;
@@ -45,6 +48,7 @@ export default function ReviewPage() {
     if (current.kind === "capture") await updateCapture(current.record.id, { snoozedUntil: nextWeek });
     if (current.kind === "action") await updateAction(current.record.id, { updatedAt: Date.now() });
     if (current.kind === "item") await updateItem(current.record.id, { reviewAt: nextWeek });
+    notify("Snoozed for one week.", "info");
   };
   const archive = async () => {
     if (!current) return;
@@ -52,12 +56,14 @@ export default function ReviewPage() {
     if (current.kind === "capture") await updateCapture(current.record.id, { status: "archived" });
     if (current.kind === "action") await updateAction(current.record.id, { status: "cancelled" });
     if (current.kind === "item") await updateItem(current.record.id, { archivedAt: Date.now() });
+    notify("Archived. Moving on.");
   };
   const convert = async () => {
     if (!current) return;
     setAiPrompt("");
     if (current.kind === "capture") await convertCaptureToAction(current.record.id);
     if (current.kind === "item") { await addAction(current.record.title, { sourceItemId: current.record.id }); await updateItem(current.record.id, { reviewAt: Date.now() + 30 * 86400000 }); }
+    notify("Action created from this review item.");
   };
   const saveDraft = async () => {
     if (!current || !draft.trim()) return;
@@ -71,12 +77,12 @@ export default function ReviewPage() {
     setAskingAi(true);
     setAiPrompt("");
     try {
-      const response = await authedFetch("/pm-os/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: "Help me review this item. Tell me why it may still matter and recommend one of: keep, update, convert to action, snooze, or archive. Be concise.", context: [`Type: ${current.kind}`, `Title: ${title}`, `Content: ${content || "none"}`] }) });
+      const response = await authedFetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: "Help me review this item. Tell me why it may still matter and recommend one of: keep, update, convert to action, snooze, or archive. Be concise.", context: [`Type: ${current.kind}`, `Title: ${title}`, `Content: ${content || "none"}`] }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       setAiPrompt(result.message);
     } catch (error) {
-      setAiPrompt(error instanceof Error ? error.message : "Groq review guidance is unavailable.");
+      setAiPrompt(error instanceof Error ? error.message : "Auxiliaire could not provide review guidance right now.");
     } finally { setAskingAi(false); }
   };
 

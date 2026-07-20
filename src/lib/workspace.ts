@@ -36,8 +36,22 @@ export interface Item {
   reviewAt?: number;
   archivedAt?: number;
   lastReviewedAt?: number;
+  webResearch?: WebResearch;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface WebSource {
+  title: string;
+  url: string;
+  snippet?: string;
+}
+
+export interface WebResearch {
+  query: string;
+  answer: string;
+  sources: WebSource[];
+  researchedAt: number;
 }
 
 export interface Action {

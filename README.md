@@ -16,6 +16,7 @@ The product has five surfaces: Today, Inbox, Library, Review, and Settings. Core
 - IndexedDB audio storage
 - Groq Cloud chat completions
 - Groq Whisper transcription
+- Groq Compound web research with source-aware Library enrichment
 
 ## Local Setup
 
@@ -24,10 +25,10 @@ npm install
 npm run dev
 ```
 
-The app uses a base path in web mode:
+The app runs from the domain root in web mode:
 
 ```text
-http://localhost:3000/pm-os/today
+http://localhost:3000/today
 ```
 
 ## Environment
@@ -41,6 +42,7 @@ ALLOWED_EMAIL=you@example.com
 GROQ_API_KEY=your-groq-cloud-key
 GROQ_CHAT_MODEL=llama-3.3-70b-versatile
 GROQ_STT_MODEL=whisper-large-v3-turbo
+GROQ_WEB_MODEL=groq/compound-mini
 ```
 
 `.env.local` is ignored by Git.

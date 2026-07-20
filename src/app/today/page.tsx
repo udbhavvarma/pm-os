@@ -8,9 +8,11 @@ import SyncIndicator from "@/components/ui/SyncIndicator";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { dayId } from "@/lib/workspace";
 import { authedFetch } from "@/lib/api";
+import { useFeedback } from "@/context/FeedbackContext";
 
 export default function TodayPage() {
   const { actions, captures, items, dailyStates, brief, loaded, updateAction, updateDailyState } = useWorkspace();
+  const { notify } = useFeedback();
   const today = useMemo(() => new Date(), []);
   const [generatingGuidance, setGeneratingGuidance] = useState(false);
   const [guidanceError, setGuidanceError] = useState("");
@@ -39,12 +41,13 @@ export default function TodayPage() {
         `Reviews due: ${dueReviews.map((item) => item.title).join("; ") || "none"}`,
         `Current focus: ${focus?.title || "not selected"}`,
       ];
-      const response = await authedFetch("/pm-os/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: "Give me a short daily perspective: what matters, what can wait, and the cleanest first move. Use at most 120 words.", context }) });
+      const response = await authedFetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: "Give me a short daily perspective: what matters, what can wait, and the cleanest first move. Use at most 120 words.", context }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       await updateDailyState({ aiGuidance: result.message, aiGuidanceAt: Date.now() });
+      notify("Today’s perspective is current.");
     } catch (error) {
-      setGuidanceError(error instanceof Error ? error.message : "Groq guidance is unavailable. Your deterministic Today view is unchanged.");
+      setGuidanceError(error instanceof Error ? error.message : "Auxiliaire could not generate guidance right now. Your Today view is unchanged.");
     } finally { setGeneratingGuidance(false); }
   };
 
@@ -77,7 +80,7 @@ export default function TodayPage() {
                 <h2 className="font-editorial text-xl @md:text-2xl">{focus.title}</h2>
                 <p className="mt-2 text-xs text-[#aaa294]">Your recommended next action, calculated from priority and due date.</p>
               </div>
-              <button type="button" onClick={() => updateAction(focus.id, { status: "done", completedAt: Date.now() })} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fbf7ef] text-[#171713]" aria-label="Complete focus action">
+              <button type="button" onClick={async () => { await updateAction(focus.id, { status: "done", completedAt: Date.now() }); notify("Focus completed."); }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fbf7ef] text-[#171713]" aria-label="Complete focus action">
                 <Check className="h-4 w-4" />
               </button>
             </div>
@@ -88,7 +91,7 @@ export default function TodayPage() {
 
         <section className="mt-5 rounded-[20px] border border-[#d5ddcf] bg-[#eef0e8] p-4 @sm:p-5">
           <div className="flex items-start justify-between gap-4">
-            <div><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#5b6b56]"><Sparkles className="h-3.5 w-3.5" /> Auxiliaire perspective</p>{state?.aiGuidance ? <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#354032]">{state.aiGuidance}</p> : <p className="mt-2 text-xs leading-5 text-[#5c6658]">Ask Groq to interpret today’s current actions, captures, and reviews.</p>}</div>
+            <div><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#5b6b56]"><Sparkles className="h-3.5 w-3.5" /> Auxiliaire perspective</p>{state?.aiGuidance ? <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#354032]">{state.aiGuidance}</p> : <p className="mt-2 text-xs leading-5 text-[#5c6658]">Ask Auxiliaire to interpret today’s current actions, captures, and reviews.</p>}</div>
             <button type="button" onClick={generateGuidance} disabled={generatingGuidance} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#71836a] px-3 py-2.5 text-xs font-semibold text-white disabled:opacity-50">{generatingGuidance ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} {state?.aiGuidance ? "Refresh" : "Generate"}</button>
           </div>
           {guidanceError && <p className="mt-3 rounded-lg bg-[#fff1ef] px-3 py-2 text-xs text-[#8d5149]">{guidanceError}</p>}
@@ -111,8 +114,8 @@ export default function TodayPage() {
             <div className="mt-4 space-y-2">
               {openActions.length ? openActions.map((action) => (
                 <div key={action.id} className="flex items-center gap-3 rounded-xl border border-[#eee6d8] px-3 py-3">
-                  <button type="button" onClick={() => updateAction(action.id, { status: "done", completedAt: Date.now() })} aria-label={`Complete ${action.title}`} className="h-5 w-5 rounded-full border border-[#9c9588]" />
-                  <button type="button" onClick={() => updateDailyState({ focusActionId: action.id })} className="min-w-0 flex-1 truncate text-left text-xs font-semibold">{action.title}</button>
+                  <button type="button" onClick={async () => { await updateAction(action.id, { status: "done", completedAt: Date.now() }); notify("Action completed."); }} aria-label={`Complete ${action.title}`} className="h-5 w-5 rounded-full border border-[#9c9588]" />
+                  <button type="button" onClick={async () => { await updateDailyState({ focusActionId: action.id }); notify("Today’s focus updated.", "info"); }} className="min-w-0 flex-1 truncate text-left text-xs font-semibold">{action.title}</button>
                 </div>
               )) : <p className="py-6 text-center text-xs text-[#686255]">No open actions.</p>}
             </div>

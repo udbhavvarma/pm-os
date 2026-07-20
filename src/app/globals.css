@@ -181,6 +181,32 @@ a:focus-visible {
   50%       { opacity: 1; }
 }
 
+/* Route handoff: quick enough to feel direct, soft enough to preserve continuity. */
+::view-transition-old(.page-exit) {
+  animation: 110ms ease-in both page-handoff-out;
+}
+
+::view-transition-new(.page-enter) {
+  animation: 190ms 35ms ease-out both page-handoff-in;
+}
+
+@keyframes page-handoff-out {
+  to { opacity: 0; transform: translateY(-3px); filter: blur(1px); }
+}
+
+@keyframes page-handoff-in {
+  from { opacity: 0; transform: translateY(5px); filter: blur(1px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(.page-exit),
+  ::view-transition-new(.page-enter) {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+}
+
 /* ─── Swipeable card stack ─── */
 .swipe-card {
   touch-action: pan-y;

@@ -4,10 +4,13 @@ import { useState } from "react";
 import { Check, Link2, Mic, Plus, X } from "lucide-react";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import RecordPanel from "@/components/recording/RecordPanel";
+import { usePersistentState } from "@/hooks/usePersistentState";
+import { useFeedback } from "@/context/FeedbackContext";
 
 export default function CaptureComposer({ compact = false }: { compact?: boolean }) {
   const { addCapture } = useWorkspace();
-  const [content, setContent] = useState("");
+  const { notify } = useFeedback();
+  const [content, setContent] = usePersistentState("universal-capture-draft", "");
   const [recording, setRecording] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -18,6 +21,7 @@ export default function CaptureComposer({ compact = false }: { compact?: boolean
     const inputType = /^https?:\/\/\S+$/i.test(rawContent) ? "link" : "text";
     await addCapture({ inputType, rawContent });
     setContent("");
+    notify("Captured. It is waiting in your Inbox.");
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1800);
   };
@@ -56,4 +60,3 @@ export default function CaptureComposer({ compact = false }: { compact?: boolean
     </div>
   );
 }
-

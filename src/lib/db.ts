@@ -292,6 +292,10 @@ export interface DashboardState {
   }[];
   changedItems: string[];
   updatedAt: number;
+  // Brief freshness tracking
+  lastBriefAt?: number;      // Unix ms when the brief was last AI-generated
+  awareness?: string;        // Auxiliaire's one-sentence observation ("You added 3 things since yesterday...")
+  nextAction?: string;       // The one cleanest suggested next action
 }
 
 export const getWatchlistRecords = async (uid: string | null): Promise<WatchlistItem[]> => {

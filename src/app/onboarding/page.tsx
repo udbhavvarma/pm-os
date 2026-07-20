@@ -9,7 +9,7 @@ import {
   saveDashboardState,
   saveWatchlistRecord,
   saveKnowledgeRecord,
-  type DashboardState
+  type DashboardState,
 } from "@/lib/db";
 import {
   Code,
@@ -21,11 +21,10 @@ import {
   ArrowRight,
   Plus,
   X,
-  Check,
   Loader2,
-  Sparkles,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
+import { AuxiliaireMark } from "@/components/ui/Icons";
 
 interface FocusOption {
   id: string;
@@ -35,12 +34,12 @@ interface FocusOption {
 }
 
 const FOCUS_OPTIONS: FocusOption[] = [
-  { id: "engineering", label: "Engineering", icon: Code, description: "Software, systems, systems architecture" },
-  { id: "product", label: "Product Management", icon: Layers, description: "Strategy, roadmaps, execution" },
-  { id: "creative", label: "Creative & Design", icon: Compass, description: "UX/UI, branding, storytelling" },
-  { id: "research", label: "Research", icon: Search, description: "Analysis, synthesis, writing" },
-  { id: "operations", label: "Operations", icon: Settings, description: "Processes, coordination, admin" },
-  { id: "custom", label: "Custom Focus", icon: Pencil, description: "Define your own specific priority" },
+  { id: "engineering",  label: "Engineering",        icon: Code,    description: "Software, systems, architecture" },
+  { id: "product",      label: "Product Management", icon: Layers,  description: "Strategy, roadmaps, execution" },
+  { id: "creative",     label: "Creative & Design",  icon: Compass, description: "UX/UI, branding, storytelling" },
+  { id: "research",     label: "Research",           icon: Search,  description: "Analysis, synthesis, writing" },
+  { id: "operations",   label: "Operations",         icon: Settings, description: "Processes, coordination, admin" },
+  { id: "custom",       label: "Custom Focus",       icon: Pencil,  description: "Define your own specific priority" },
 ];
 
 const PRESET_INTERESTS = [
@@ -58,9 +57,15 @@ const PRESET_INTERESTS = [
 const PROGRESS_PHASES = [
   "Analyzing focus area & interests...",
   "Connecting to Groq AI intelligence...",
-  "Drafting custom readiness brief & signals...",
+  "Drafting your readiness brief & signals...",
   "Processing capture insights...",
-  "Initializing workspace dashboard...",
+  "Initializing workspace...",
+];
+
+const STEPS = [
+  { id: 1, label: "Focus" },
+  { id: 2, label: "Interests" },
+  { id: 3, label: "Context" },
 ];
 
 export default function OnboardingPage() {
@@ -76,14 +81,12 @@ export default function OnboardingPage() {
   const [progressText, setProgressText] = useState(PROGRESS_PHASES[0]);
   const [error, setError] = useState("");
 
-  // Redirect if user is already onboarded
   useEffect(() => {
     if (!authLoading && userData?.onboarded) {
       router.push("/dashboard");
     }
   }, [userData, authLoading, router]);
 
-  // Loading animation phase changer
   useEffect(() => {
     if (!isLoading) return;
     let phase = 0;
@@ -121,10 +124,12 @@ export default function OnboardingPage() {
   const handleGenerate = async () => {
     setIsLoading(true);
     setError("");
-    const finalFocus = focus === "custom" ? customFocus : FOCUS_OPTIONS.find((f) => f.id === focus)?.label || focus;
+    const finalFocus =
+      focus === "custom"
+        ? customFocus
+        : FOCUS_OPTIONS.find((f) => f.id === focus)?.label || focus;
 
     try {
-      // Call onboarding generation API
       const response = await authedFetch("/pm-os/api/onboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -141,11 +146,8 @@ export default function OnboardingPage() {
       }
 
       const data = await response.json();
-
-      // Write results to database (with automatic localStorage fallback inside helpers)
       const uid = user?.uid || null;
 
-      // 1. Save Dashboard state
       const dashboardState: DashboardState = {
         focus: finalFocus,
         focusReason: data.focusReason || "Your workspace is ready.",
@@ -155,7 +157,6 @@ export default function OnboardingPage() {
       };
       await saveDashboardState(uid, dashboardState);
 
-      // 2. Save Watchlist items
       if (Array.isArray(data.watchlist)) {
         for (const item of data.watchlist) {
           await saveWatchlistRecord(uid, {
@@ -170,7 +171,6 @@ export default function OnboardingPage() {
         }
       }
 
-      // 3. Save Knowledge Records
       if (Array.isArray(data.knowledge)) {
         for (const item of data.knowledge) {
           await saveKnowledgeRecord(uid, {
@@ -185,10 +185,7 @@ export default function OnboardingPage() {
         }
       }
 
-      // 4. Update user profile to onboarded
       await updateUserDataState({ onboarded: true });
-
-      // Clean transition redirect
       router.push("/dashboard");
     } catch (err: unknown) {
       console.error("Onboarding setup failure:", err);
@@ -202,292 +199,320 @@ export default function OnboardingPage() {
 
   if (authLoading) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center bg-[#f4efe6] p-6 text-[#23231f]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#71836a]" />
+      <div className="flex flex-1 flex-col items-center justify-center bg-[#f4efe6] p-6">
+        <Loader2 className="h-6 w-6 animate-spin text-[#71836a]/60" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-[#f4efe6] px-4 py-8 text-[#23231f] md:px-6">
-      <div className="mx-auto w-full max-w-md flex-1 flex flex-col justify-center">
-        
-        {/* Onboarding Wizard Card */}
-        <div className="relative rounded-[28px] border border-[#ded6c8] bg-[#fbf7ef] p-6 shadow-xl shadow-[#23231f]/5 flex flex-col @sm:p-8 min-h-[500px]">
-          
-          {/* Subtle top accent */}
-          <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#71836a]/30 to-transparent" />
-          
-          <AnimatePresence mode="wait">
-            {isLoading ? (
-              // Step 4: AI Generation State
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-1 flex-col items-center justify-center text-center space-y-6 py-8"
-              >
-                <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-[#71836a]/10 text-[#71836a]">
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                  >
-                    <Sparkles className="h-10 w-10" />
-                  </motion.div>
-                </div>
-                
-                <div className="space-y-2">
-                  <h2 className="font-editorial text-2xl tracking-tight text-[#23231f]">Assembling your space</h2>
-                  <p className="text-sm text-[#5c5649] h-10 flex items-center justify-center font-medium">
-                    {progressText}
-                  </p>
-                </div>
-                
-                {/* Visual loading bar */}
-                <div className="h-1 w-48 overflow-hidden rounded-full bg-[#ded6c8]">
-                  <motion.div
-                    className="h-full bg-[#71836a]"
-                    animate={{ width: ["10%", "90%", "10%"] }}
-                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                  />
-                </div>
-              </motion.div>
-            ) : error ? (
-              // Error State
-              <motion.div
-                key="error"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-1 flex-col items-center justify-center text-center space-y-6 py-8"
-              >
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600">
-                  <AlertCircle className="h-8 w-8" />
-                </div>
-                <div className="space-y-2">
-                  <h2 className="font-editorial text-2xl tracking-tight text-red-950">Workspace Setup Error</h2>
-                  <p className="text-sm text-red-800 px-4">{error}</p>
-                </div>
-                <button
-                  onClick={() => setError("")}
-                  className="rounded-2xl bg-[#171713] px-6 py-3 text-sm font-semibold text-[#fbf7ef] transition-colors hover:bg-[#2d2d26]"
+    <div className="flex flex-1 flex-col bg-[#f4efe6] px-4 py-8 text-[#23231f] @sm:px-5">
+      <div className="mx-auto w-full max-w-[440px] flex-1 flex flex-col justify-center">
+
+        {/* Card */}
+        <div className="relative overflow-hidden rounded-[24px] border border-[#ddd5c5] bg-[#fbf7ef] shadow-xl shadow-[#23231f]/6">
+          {/* Top accent hairline */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#71836a]/28 to-transparent" />
+
+          {/* Card header with brand identity */}
+          <div className="flex items-center justify-between border-b border-[#eee6d8] px-6 py-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-[7px] border border-[#ded6c8] bg-[#f4efe6] text-[#71836a]">
+                <AuxiliaireMark className="h-3.5 w-3.5" />
+              </div>
+              <span className="font-editorial text-[15px] tracking-tight text-[#23231f]">Auxiliaire</span>
+            </div>
+
+            {/* Step indicators — dots, not numbers (content is not a numbered sequence that needs ordering) */}
+            <div className="flex items-center gap-1.5">
+              {STEPS.map((s) => (
+                <div
+                  key={s.id}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    s.id === step
+                      ? "w-5 bg-[#71836a]"
+                      : s.id < step
+                      ? "w-1.5 bg-[#71836a]/40"
+                      : "w-1.5 bg-[#ded6c8]"
+                  }`}
+                  title={s.label}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="p-6 @sm:p-7">
+            <AnimatePresence mode="wait">
+              {isLoading ? (
+                /* AI Generation State */
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex flex-col items-center justify-center text-center space-y-6 py-10"
                 >
-                  Try Again
-                </button>
-              </motion.div>
-            ) : (
-              // Onboarding steps
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 15 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -15 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-                className="flex flex-1 flex-col"
-              >
-                {/* Header indicators */}
-                <div className="flex items-center justify-between mb-6">
-                  <span className="text-[10px] font-semibold tracking-widest uppercase text-[#686255]">
-                    Step {step} of 3
-                  </span>
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3].map((s) => (
-                      <div
-                        key={s}
-                        className={`h-1.5 w-6 rounded-full transition-all duration-300 ${
-                          s === step ? "bg-[#71836a]" : "bg-[#ded6c8]/60"
-                        }`}
-                      />
-                    ))}
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#71836a]/10">
+                    <motion.div
+                      animate={{ opacity: [0.7, 1, 0.7] }}
+                      transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                    >
+                      <AuxiliaireMark className="h-7 w-7 text-[#71836a]" />
+                    </motion.div>
                   </div>
-                </div>
+                  <div className="space-y-2">
+                    <h2 className="font-editorial text-[22px] tracking-tight text-[#23231f]">
+                      Assembling your space
+                    </h2>
+                    <p className="text-[13px] text-[#5c5649] min-h-[1.5rem] font-medium">
+                      {progressText}
+                    </p>
+                  </div>
+                  <div className="h-0.5 w-40 overflow-hidden rounded-full bg-[#e8dfd2]">
+                    <motion.div
+                      className="h-full bg-[#71836a]"
+                      animate={{ x: ["-100%", "100%"] }}
+                      transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                    />
+                  </div>
+                </motion.div>
+              ) : error ? (
+                /* Error State */
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.28 }}
+                  className="flex flex-col items-center justify-center text-center space-y-5 py-8"
+                >
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#b47a72]/10 text-[#b47a72]">
+                    <AlertCircle className="h-7 w-7" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h2 className="font-editorial text-[20px] tracking-tight text-[#23231f]">
+                      Setup ran into a problem
+                    </h2>
+                    <p className="text-[13px] text-[#5c5649] px-2 leading-relaxed">{error}</p>
+                  </div>
+                  <button
+                    id="onboarding-retry-btn"
+                    onClick={() => setError("")}
+                    className="btn-ink px-6 py-2.5 text-[13px]"
+                  >
+                    Try again
+                  </button>
+                </motion.div>
+              ) : (
+                /* Step content */
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex flex-col"
+                >
+                  <div className="min-h-[380px] flex flex-col">
+                    {/* ── Step 1: Focus ── */}
+                    {step === 1 && (
+                      <div className="space-y-5 flex-1 flex flex-col">
+                        <div>
+                          <h2 className="font-editorial text-[22px] tracking-tight text-[#23231f]">
+                            What is your primary focus?
+                          </h2>
+                          <p className="mt-1.5 text-[12.5px] text-[#5c5649] leading-relaxed">
+                            Auxiliaire tailors your readiness brief and context alerts around your core work.
+                          </p>
+                        </div>
 
-                {/* Step Content */}
-                <div className="flex-1 flex flex-col min-h-[350px]">
-                  {step === 1 && (
-                    <div className="space-y-5 flex-1 flex flex-col">
-                      <div>
-                        <h2 className="font-editorial text-2xl tracking-tight text-[#23231f]">Select your primary focus</h2>
-                        <p className="mt-1.5 text-xs text-[#5c5649] leading-relaxed">
-                          Auxiliaire tailors your morning brief, readiness indices, and context alerts around your core output.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 flex-1 overflow-y-auto max-h-[280px] pr-1 no-scrollbar">
-                        {FOCUS_OPTIONS.map((option) => {
-                          const IconComponent = option.icon;
-                          const isSelected = focus === option.id;
-                          return (
-                            <button
-                              key={option.id}
-                              type="button"
-                              onClick={() => handleFocusSelect(option.id)}
-                              className={`flex flex-col items-start text-left p-3.5 rounded-2xl border transition-all ${
-                                isSelected
-                                  ? "border-[#71836a] bg-[#71836a]/5 text-[#23231f]"
-                                  : "border-[#ded6c8] bg-[#fbf7ef] text-[#5c5649] hover:bg-[#f4efe6]/50"
-                              }`}
-                            >
-                              <div
-                                className={`flex h-8 w-8 items-center justify-center rounded-xl mb-3 ${
-                                  isSelected ? "bg-[#71836a] text-[#fbf7ef]" : "bg-[#f4efe6] text-[#686255]"
+                        <div className="grid grid-cols-2 gap-2.5 flex-1 overflow-y-auto max-h-[300px] pr-0.5 no-scrollbar">
+                          {FOCUS_OPTIONS.map((option) => {
+                            const IconComponent = option.icon;
+                            const isSelected = focus === option.id;
+                            return (
+                              <button
+                                key={option.id}
+                                id={`focus-option-${option.id}`}
+                                type="button"
+                                onClick={() => handleFocusSelect(option.id)}
+                                className={`flex flex-col items-start text-left p-3.5 rounded-[14px] border transition-all duration-150 ${
+                                  isSelected
+                                    ? "border-[#71836a]/60 bg-[#71836a]/7"
+                                    : "border-[#e4dbd0] bg-[#fbf7ef] hover:bg-[#f7f2ea]"
                                 }`}
                               >
-                                <IconComponent className="h-4.5 w-4.5" />
-                              </div>
-                              <h3 className="text-xs font-semibold text-[#23231f]">{option.label}</h3>
-                              <p className="mt-1 text-[10px] leading-relaxed text-[#686255] line-clamp-2">
-                                {option.description}
-                              </p>
-                            </button>
-                          );
-                        })}
-                      </div>
+                                <div
+                                  className={`flex h-7 w-7 items-center justify-center rounded-[8px] mb-3 transition-colors ${
+                                    isSelected
+                                      ? "bg-[#71836a] text-[#fbf7ef]"
+                                      : "bg-[#f4efe6] text-[#71836a]"
+                                  }`}
+                                >
+                                  <IconComponent className="h-[15px] w-[15px]" />
+                                </div>
+                                <h3 className="text-[12px] font-semibold text-[#23231f] leading-snug">{option.label}</h3>
+                                <p className="mt-0.5 text-[11px] leading-relaxed text-[#7a7264] line-clamp-2">
+                                  {option.description}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
 
-                      {focus === "custom" && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="pt-1"
-                        >
+                        {focus === "custom" && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <input
+                              id="custom-focus-input"
+                              type="text"
+                              value={customFocus}
+                              onChange={(e) => setCustomFocus(e.target.value)}
+                              placeholder="e.g. Compiler Development, UI Engineering"
+                              className="input-soft text-[13px]"
+                            />
+                          </motion.div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── Step 2: Interests ── */}
+                    {step === 2 && (
+                      <div className="space-y-4 flex-1 flex flex-col">
+                        <div>
+                          <h2 className="font-editorial text-[22px] tracking-tight text-[#23231f]">
+                            Topics to monitor
+                          </h2>
+                          <p className="mt-1.5 text-[12.5px] text-[#5c5649] leading-relaxed">
+                            Auxiliaire scans updates and signals for these. Choose at least one.
+                          </p>
+                        </div>
+
+                        <form onSubmit={handleAddCustomInterest} className="flex gap-2">
                           <input
                             type="text"
-                            value={customFocus}
-                            onChange={(e) => setCustomFocus(e.target.value)}
-                            placeholder="e.g. Compiler Development, UI Engineering"
-                            className="w-full rounded-xl border border-[#ded6c8] bg-[#f4efe6]/40 px-3.5 py-2.5 text-xs text-[#23231f] outline-none placeholder:text-[#857c6d] focus:border-[#71836a]"
+                            value={customInterest}
+                            onChange={(e) => setCustomInterest(e.target.value)}
+                            placeholder="Add a topic..."
+                            className="input-soft flex-1 text-[13px]"
                           />
-                        </motion.div>
-                      )}
-                    </div>
-                  )}
+                          <button
+                            type="submit"
+                            aria-label="Add topic"
+                            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[10px] bg-[#71836a] text-[#fbf7ef] transition-colors hover:bg-[#5b6b56]"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </form>
 
-                  {step === 2 && (
-                    <div className="space-y-5 flex-1 flex flex-col">
-                      <div>
-                        <h2 className="font-editorial text-2xl tracking-tight text-[#23231f]">Topics to monitor</h2>
-                        <p className="mt-1.5 text-xs text-[#5c5649] leading-relaxed">
-                          We scan updates, release logs, and signals for these. Choose at least one topic.
-                        </p>
-                      </div>
-
-                      {/* Add custom interest form */}
-                      <form onSubmit={handleAddCustomInterest} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={customInterest}
-                          onChange={(e) => setCustomInterest(e.target.value)}
-                          placeholder="Add custom feed topic..."
-                          className="flex-1 rounded-xl border border-[#ded6c8] bg-[#f4efe6]/40 px-3.5 py-2 text-xs text-[#23231f] outline-none placeholder:text-[#857c6d] focus:border-[#71836a]"
-                        />
-                        <button
-                          type="submit"
-                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#71836a] text-[#fbf7ef] hover:bg-[#5b6b56]"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                      </form>
-
-                      {/* Interests selection grid */}
-                      <div className="flex-1 overflow-y-auto max-h-[220px] pr-1 no-scrollbar space-y-3">
-                        {/* Selected tags */}
-                        {interests.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pb-2.5 border-b border-[#ded6c8]/60">
-                            {interests.map((item) => (
-                              <span
-                                key={item}
-                                className="inline-flex items-center gap-1 rounded-lg bg-[#71836a] px-2.5 py-1 text-[11px] font-semibold text-[#fbf7ef]"
-                              >
-                                {item}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveInterest(item)}
-                                  className="rounded-full hover:bg-black/10 p-0.5"
+                        <div className="flex-1 overflow-y-auto max-h-[240px] pr-0.5 no-scrollbar space-y-3">
+                          {interests.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pb-3 border-b border-[#e8dfd2]">
+                              {interests.map((item) => (
+                                <span
+                                  key={item}
+                                  className="inline-flex items-center gap-1.5 rounded-[7px] bg-[#71836a] px-2.5 py-1 text-[11px] font-semibold text-[#fbf7ef]"
                                 >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </span>
+                                  {item}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveInterest(item)}
+                                    aria-label={`Remove ${item}`}
+                                    className="rounded-full hover:bg-black/12 p-0.5"
+                                  >
+                                    <X className="h-2.5 w-2.5" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap gap-2">
+                            {PRESET_INTERESTS.filter((p) => !interests.includes(p)).map((preset) => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => toggleInterest(preset)}
+                                className="inline-flex items-center rounded-[7px] border border-[#e4dbd0] bg-[#fbf7ef] px-2.5 py-1 text-[12px] font-medium text-[#5c5649] transition-colors hover:bg-[#f4efe6] hover:border-[#c8c0b2] active:scale-95"
+                              >
+                                {preset}
+                              </button>
                             ))}
                           </div>
-                        )}
-
-                        {/* Preset tags grid */}
-                        <div className="flex flex-wrap gap-2">
-                          {PRESET_INTERESTS.filter((p) => !interests.includes(p)).map((preset) => (
-                            <button
-                              key={preset}
-                              type="button"
-                              onClick={() => toggleInterest(preset)}
-                              className="inline-flex items-center rounded-lg border border-[#ded6c8] bg-[#fbf7ef] px-2.5 py-1 text-xs text-[#5c5649] transition-colors hover:bg-[#f4efe6] active:scale-95"
-                            >
-                              {preset}
-                            </button>
-                          ))}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {step === 3 && (
-                    <div className="space-y-4 flex-1 flex flex-col">
-                      <div>
-                        <h2 className="font-editorial text-2xl tracking-tight text-[#23231f]">Starter thought capture</h2>
-                        <p className="mt-1.5 text-xs text-[#5c5649] leading-relaxed">
-                          (Optional) Drop a rough link, project snippet, or copy-paste what you are working on today. The intelligence will synthesize it into your first knowledge note.
-                        </p>
+                    {/* ── Step 3: Context ── */}
+                    {step === 3 && (
+                      <div className="space-y-4 flex-1 flex flex-col">
+                        <div>
+                          <h2 className="font-editorial text-[22px] tracking-tight text-[#23231f]">
+                            Starter thought capture
+                          </h2>
+                          <p className="mt-1.5 text-[12.5px] text-[#5c5649] leading-relaxed">
+                            Optional. Drop a rough link, project snippet, or what you are working on today. Auxiliaire will turn it into your first knowledge note.
+                          </p>
+                        </div>
+                        <div className="flex-1 flex flex-col">
+                          <textarea
+                            id="initial-note-textarea"
+                            value={initialNote}
+                            onChange={(e) => setInitialNote(e.target.value)}
+                            placeholder="e.g. Planning to audit Next.js dev server configurations. Sarah mentioned checking Vercel cold starts. Link: vercel.com/blog/..."
+                            className="w-full flex-1 min-h-[180px] rounded-[14px] border border-[#e4dbd0] bg-[#f4efe6]/60 p-4 text-[13px] text-[#23231f] outline-none resize-none placeholder:text-[#9a9080] leading-relaxed transition-colors focus:border-[#71836a]/55 focus:bg-[#fffaf3]"
+                          />
+                        </div>
                       </div>
+                    )}
+                  </div>
 
-                      <div className="flex-1 flex flex-col">
-                        <textarea
-                          value={initialNote}
-                          onChange={(e) => setInitialNote(e.target.value)}
-                          placeholder="e.g. Planning to audit Next.js dev server configurations. Sarah mentioned checking on Vercel cold starts at the meeting. Link: vercel.com/blog/..."
-                          className="w-full flex-1 min-h-[160px] max-h-[220px] rounded-2xl border border-[#ded6c8] bg-[#f4efe6]/40 p-4 text-xs text-[#23231f] outline-none resize-none placeholder:text-[#857c6d] focus:border-[#71836a]"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  {/* Footer navigation */}
+                  <div className="mt-6 pt-4 border-t border-[#eee6d8] flex items-center justify-between">
+                    {step > 1 ? (
+                      <button
+                        type="button"
+                        id="onboarding-back-btn"
+                        onClick={() => setStep((s) => s - 1)}
+                        className="text-[12.5px] font-semibold text-[#7a7264] px-3 py-2 rounded-[8px] transition-colors hover:text-[#23231f] hover:bg-[#f4efe6]"
+                      >
+                        Back
+                      </button>
+                    ) : (
+                      <div />
+                    )}
 
-                {/* Footer Navigation Buttons */}
-                <div className="mt-6 pt-4 border-t border-[#ded6c8]/60 flex items-center justify-between">
-                  {step > 1 ? (
-                    <button
-                      type="button"
-                      onClick={() => setStep((s) => s - 1)}
-                      className="text-xs font-semibold text-[#5c5649] px-4 py-2 rounded-xl transition-colors hover:text-[#23231f]"
-                    >
-                      Back
-                    </button>
-                  ) : (
-                    <div />
-                  )}
-
-                  {step < 3 ? (
-                    <button
-                      type="button"
-                      disabled={step === 1 ? !isFocusValid : !isInterestsValid}
-                      onClick={() => setStep((s) => s + 1)}
-                      className="group flex items-center gap-2 rounded-2xl bg-[#171713] px-6 py-3.5 text-xs font-semibold text-[#fbf7ef] transition-all hover:bg-[#2d2d26] disabled:opacity-50"
-                    >
-                      <span>Continue</span>
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleGenerate}
-                      className="group flex items-center gap-2 rounded-2xl bg-[#71836a] px-6 py-3.5 text-xs font-semibold text-[#fbf7ef] shadow-lg shadow-[#71836a]/15 transition-all hover:bg-[#5b6b56]"
-                    >
-                      <Sparkles className="h-4.5 w-4.5" />
-                      <span>Configure Workspace</span>
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    {step < 3 ? (
+                      <button
+                        type="button"
+                        id="onboarding-continue-btn"
+                        disabled={step === 1 ? !isFocusValid : !isInterestsValid}
+                        onClick={() => setStep((s) => s + 1)}
+                        className="btn-ink group disabled:opacity-50 px-5 py-2.5"
+                      >
+                        <span className="text-[13px]">Continue</span>
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        id="onboarding-generate-btn"
+                        onClick={handleGenerate}
+                        className="btn-sage group px-5 py-2.5"
+                      >
+                        <AuxiliaireMark className="h-3.5 w-3.5" />
+                        <span className="text-[13px]">Configure workspace</span>
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>

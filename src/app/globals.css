@@ -3,39 +3,39 @@
 :root {
   --background: #f4efe6;
   --foreground: #23231f;
-  
-  /* ─── Color Tokens (DESIGN.md) ─── */
-  --color-canvas: #f4efe6;
-  --color-paper: #fbf7ef;
-  --color-stone: #e8e0d3;
-  --color-mist: #eef0e8;
-  --color-ink: #23231f;
-  --color-ink-soft: #383730;
-  --color-muted: #5c5649;
-  --color-sage: #71836a;
-  --color-clay: #b9824f;
-  --color-rose: #b47a72;
-  --color-sky: #6f8791;
 
-  --color-surface: #fbf7ef;
-  --color-surface-soft: #f4efe6;
-  --color-surface-ink: #171713;
-  --color-text-primary: #23231f;
-  --color-text-secondary: #3d3a33;
-  --color-text-muted: #5c5649;
-  --color-border-soft: #ded6c8;
-  --color-accent-ready: #71836a;
+  /* ─── Color Tokens (DESIGN.md) ─── */
+  --color-canvas:      #f4efe6;
+  --color-paper:       #fbf7ef;
+  --color-stone:       #e8e0d3;
+  --color-mist:        #eef0e8;
+  --color-ink:         #23231f;
+  --color-ink-soft:    #383730;
+  --color-muted:       #5c5649;
+  --color-sage:        #71836a;
+  --color-clay:        #b9824f;
+  --color-rose:        #b47a72;
+  --color-sky:         #6f8791;
+
+  --color-surface:          #fbf7ef;
+  --color-surface-soft:     #f4efe6;
+  --color-surface-ink:      #171713;
+  --color-text-primary:     #23231f;
+  --color-text-secondary:   #3d3a33;
+  --color-text-muted:       #5c5649;
+  --color-border-soft:      #ded6c8;
+  --color-accent-ready:     #71836a;
   --color-accent-attention: #b9824f;
-  --color-accent-reflect: #b47a72;
-  --color-accent-info: #6f8791;
+  --color-accent-reflect:   #b47a72;
+  --color-accent-info:      #6f8791;
 
   /* ─── Space Tokens ─── */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
   --space-12: 3rem;
   --space-16: 4rem;
 
@@ -44,6 +44,18 @@
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.75rem;
+
+  /* ─── Type Scale ─── */
+  --text-xs:      0.6875rem; /* 11px */
+  --text-sm:      0.8125rem; /* 13px */
+  --text-base:    0.9375rem; /* 15px */
+  --text-lg:      1.0625rem; /* 17px */
+  --text-xl:      1.25rem;
+  --text-display: 2.125rem;
+
+  --line-tight:   1.2;
+  --line-normal:  1.5;
+  --line-relaxed: 1.7;
 }
 
 @theme inline {
@@ -53,25 +65,32 @@
   --font-mono: var(--font-secondary);
   --font-editorial: var(--font-editorial-src), Georgia, "Times New Roman", serif;
 
-  --color-canvas: var(--color-canvas);
-  --color-paper: var(--color-paper);
-  --color-stone: var(--color-stone);
-  --color-mist: var(--color-mist);
-  --color-ink: var(--color-ink);
-  --color-ink-soft: var(--color-ink-soft);
-  --color-muted: var(--color-muted);
-  --color-sage: var(--color-sage);
-  --color-clay: var(--color-clay);
-  --color-rose: var(--color-rose);
-  --color-sky: var(--color-sky);
+  --color-canvas:      var(--color-canvas);
+  --color-paper:       var(--color-paper);
+  --color-stone:       var(--color-stone);
+  --color-mist:        var(--color-mist);
+  --color-ink:         var(--color-ink);
+  --color-ink-soft:    var(--color-ink-soft);
+  --color-muted:       var(--color-muted);
+  --color-sage:        var(--color-sage);
+  --color-clay:        var(--color-clay);
+  --color-rose:        var(--color-rose);
+  --color-sky:         var(--color-sky);
 
-  --color-surface: var(--color-surface);
-  --color-surface-soft: var(--color-surface-soft);
-  --color-surface-ink: var(--color-surface-ink);
-  --color-text-primary: var(--color-text-primary);
-  --color-text-secondary: var(--color-text-secondary);
-  --color-text-muted: var(--color-text-muted);
-  --color-border-soft: var(--color-border-soft);
+  --color-surface:          var(--color-surface);
+  --color-surface-soft:     var(--color-surface-soft);
+  --color-surface-ink:      var(--color-surface-ink);
+  --color-text-primary:     var(--color-text-primary);
+  --color-text-secondary:   var(--color-text-secondary);
+  --color-text-muted:       var(--color-text-muted);
+  --color-border-soft:      var(--color-border-soft);
+}
+
+/* ─── Base ─── */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -79,20 +98,22 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  line-height: var(--line-relaxed);
 }
 
 ::selection {
-  background: rgba(113, 131, 106, 0.25);
+  background: rgba(113, 131, 106, 0.22);
   color: var(--color-ink);
 }
 
 /* ─── Editorial Typography ─── */
 .font-editorial {
   font-family: var(--font-editorial-src), Georgia, "Times New Roman", serif;
+  font-feature-settings: "liga" 1, "kern" 1;
 }
 
 /* Prevent iOS from zooming in when an input is focused.
-   iOS zooms if font-size < 16px. We force it to 16px and reset after. */
+   iOS zooms if font-size < 16px. We force 16px and let the design handle visual size. */
 input,
 textarea,
 select {
@@ -101,26 +122,25 @@ select {
 
 /* ─── Refined Focus States ─── */
 *:focus-visible {
-  outline: 2px solid rgba(113, 131, 106, 0.5);
+  outline: 2px solid rgba(113, 131, 106, 0.45);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid rgba(113, 131, 106, 0.4);
-  outline-offset: 1px;
+  outline: 2px solid rgba(113, 131, 106, 0.35);
+  outline-offset: 2px;
 }
 
-/* Utilities for mobile responsiveness and hiding scrollbars */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
+/* ─── Scrollbar suppression ─── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
+/* ─── Glass variants ─── */
 .glass-card {
   background: rgba(251, 247, 239, 0.82);
   backdrop-filter: blur(16px);
@@ -135,12 +155,38 @@ a:focus-visible {
   border: 1px solid rgba(251, 247, 239, 0.12);
 }
 
-/* Swipeable card stack: prevent scroll fighting on mobile. */
+/* ─── Readiness line — the product's signature ambient element ─── */
+/* A single warm hairline at the top of the content area that softly glows.
+   It is the only animated element in the shell; everything else is still. */
+.readiness-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(113, 131, 106, 0.0) 10%,
+    rgba(113, 131, 106, 0.45) 40%,
+    rgba(185, 130, 79, 0.35) 60%,
+    rgba(113, 131, 106, 0.2) 80%,
+    transparent 100%
+  );
+  animation: readiness-breathe 6s ease-in-out infinite;
+}
+
+@keyframes readiness-breathe {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
+/* ─── Swipeable card stack ─── */
 .swipe-card {
   touch-action: pan-y;
 }
 
-/* ─── Subtle Ambient Glow ─── */
+/* ─── Subtle ambient glow ─── */
 .ambient-glow {
   position: relative;
 }
@@ -151,9 +197,9 @@ a:focus-visible {
   border-radius: inherit;
   background: linear-gradient(
     135deg,
-    rgba(113, 131, 106, 0.08),
-    rgba(185, 130, 79, 0.05) 50%,
-    rgba(180, 122, 114, 0.04)
+    rgba(113, 131, 106, 0.07),
+    rgba(185, 130, 79, 0.04) 50%,
+    rgba(180, 122, 114, 0.03)
   );
   pointer-events: none;
   z-index: 0;
@@ -164,18 +210,103 @@ a:focus-visible {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.025;
+  opacity: 0.022;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   pointer-events: none;
   border-radius: inherit;
   z-index: 1;
 }
 
-/* Reduced motion: honour the OS "reduce motion" preference for everything driven
-   by CSS (animate-pulse/spin, transitions, smooth scroll). framer-motion is handled
-   separately via <MotionConfig reducedMotion="user"> in AppShell. We collapse
-   durations to ~0 rather than removing them so state changes still apply instantly
-   (an instant crossfade), per WCAG 2.3.3 / 2.2.2. */
+/* ─── Status pill ─── */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Ink button ─── */
+.btn-ink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 14px;
+  background: #171713;
+  color: #fbf7ef;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.75rem 1.25rem;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+  border: none;
+}
+.btn-ink:hover:not(:disabled) {
+  background: #2a2921;
+  box-shadow: 0 4px 18px rgba(23, 23, 19, 0.2);
+}
+.btn-ink:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ─── Sage button ─── */
+.btn-sage {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 14px;
+  background: #71836a;
+  color: #fbf7ef;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.75rem 1.25rem;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+  border: none;
+}
+.btn-sage:hover:not(:disabled) {
+  background: #5b6b56;
+  box-shadow: 0 4px 18px rgba(113, 131, 106, 0.25);
+}
+.btn-sage:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ─── Soft input ─── */
+.input-soft {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #ded6c8;
+  background: rgba(244, 239, 230, 0.5);
+  padding: 0.625rem 0.875rem;
+  color: #23231f;
+  font-family: inherit;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.input-soft::placeholder { color: #857c6d; }
+.input-soft:focus {
+  border-color: rgba(113, 131, 106, 0.6);
+  background: #fffaf3;
+}
+
+/* ─── Section label ─── */
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #686255;
+}
+
+/* ─── Divider ─── */
+.divider-soft {
+  border: none;
+  border-top: 1px solid #e8dfd2;
+}
+
+/* ─── Reduce motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

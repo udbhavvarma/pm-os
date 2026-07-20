@@ -25,10 +25,15 @@ export default function BottomNav() {
   if (pathname === "/" || pathname === "/onboarding") return null;
 
   return (
-    <nav className="absolute bottom-0 left-0 right-0 z-30 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center justify-around border-t border-[#ded6c8] bg-[#fbf7ef]/96 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_40px_rgba(35,35,31,0.08)] backdrop-blur md:h-16 md:pb-0">
+    <nav
+      aria-label="Main navigation"
+      className="absolute bottom-0 left-0 right-0 z-30 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-center justify-around border-t border-[#e4dbd0] bg-[#fbf7ef]/97 px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_32px_rgba(35,35,31,0.07)] backdrop-blur-sm md:h-16 md:pb-0"
+    >
       {navItems.map((item) => {
         const isActive =
-          item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
+          item.href === "/dashboard"
+            ? pathname === item.href
+            : pathname.startsWith(item.href);
         const Icon = item.icon;
 
         if (item.isHero) {
@@ -36,22 +41,24 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className="relative z-40 flex -translate-y-4 flex-col items-center justify-center"
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
+              className="relative z-40 flex -translate-y-[18px] flex-col items-center justify-center"
             >
               <div
                 className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg transition-all duration-300",
+                  "flex h-[50px] w-[50px] items-center justify-center rounded-[16px] shadow-lg transition-all duration-200",
                   isActive
-                    ? "bg-[#23231f] text-[#fbf7ef] shadow-[#23231f]/20"
-                    : "bg-[#71836a] text-[#fbf7ef] shadow-[#71836a]/20 active:scale-95"
+                    ? "bg-[#23231f] text-[#fbf7ef] shadow-[#23231f]/18 scale-100"
+                    : "bg-[#71836a] text-[#fbf7ef] shadow-[#71836a]/22 active:scale-95 hover:bg-[#5f7259]"
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-[19px] w-[19px]" />
               </div>
               <span
                 className={cn(
                   "mt-1 text-[9px] font-semibold tracking-wide",
-                  isActive ? "text-[#23231f]" : "text-[#5c5649]"
+                  isActive ? "text-[#23231f]" : "text-[#71836a]"
                 )}
               >
                 {item.label}
@@ -64,14 +71,26 @@ export default function BottomNav() {
           <Link
             key={item.href}
             href={item.href}
+            aria-label={item.label}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
-              "relative flex h-12 w-16 flex-col items-center justify-center rounded-xl transition-colors",
-              isActive ? "text-[#23231f]" : "text-[#5c5649] hover:text-[#383730]"
+              "relative flex h-[52px] w-16 flex-col items-center justify-center rounded-[12px] transition-colors duration-150",
+              isActive ? "text-[#23231f]" : "text-[#8a8070] hover:text-[#3d3a33]"
             )}
           >
-            {isActive && <span className="absolute top-0 h-[3px] w-4 rounded-full bg-[#71836a]" />}
-            <Icon className="h-5 w-5" />
-            <span className="mt-1 text-[9px] font-semibold tracking-wide">{item.label}</span>
+            {/* Active indicator — a dot below the icon, not a top bar */}
+            {isActive && (
+              <span className="absolute bottom-[9px] h-[3px] w-[3px] rounded-full bg-[#71836a]" />
+            )}
+            <Icon className={cn("h-[19px] w-[19px]", isActive && "text-[#23231f]")} />
+            <span
+              className={cn(
+                "mt-1 text-[9px] font-semibold tracking-wide",
+                isActive ? "text-[#23231f]" : "text-[#8a8070]"
+              )}
+            >
+              {item.label}
+            </span>
           </Link>
         );
       })}

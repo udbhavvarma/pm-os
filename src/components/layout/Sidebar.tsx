@@ -43,43 +43,53 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-[#171713] p-5 text-[#fbf7ef]">
-      <div className="mb-9 px-1 pt-3">
-        <Link href="/dashboard" className="flex items-center gap-3 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#fbf7ef]/10 bg-[#fbf7ef]/8 transition-colors group-hover:border-[#d7c8aa]/30">
-            <AuxiliaireMark className="h-5 w-5 text-[#d7c8aa]" />
+    <div className="flex h-full w-full flex-col bg-[#171713] px-4 py-5 text-[#fbf7ef]">
+      {/* Brand */}
+      <div className="mb-8 px-1 pt-2">
+        <Link href="/dashboard" className="group flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#fbf7ef]/10 bg-[#fbf7ef]/7 text-[#d0c4a8] transition-colors group-hover:border-[#d0c4a8]/25">
+            <AuxiliaireMark className="h-[18px] w-[18px]" />
           </div>
           <div>
-            <h1 className="font-editorial text-[17px] tracking-tight text-[#fbf7ef]">Auxiliaire</h1>
-            <p className="mt-0.5 text-[10px] font-medium tracking-wide text-[#b5ad9e]">Private daily intelligence</p>
+            <h1 className="font-editorial text-[16px] leading-tight tracking-tight text-[#f0e8d8]">
+              Auxiliaire
+            </h1>
+            <p className="mt-0.5 text-[10px] font-medium tracking-wide text-[#7a7264]">
+              Private daily intelligence
+            </p>
           </div>
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto pr-1 no-scrollbar">
+      {/* Nav items */}
+      <nav aria-label="Main navigation" className="flex-1 space-y-0.5 overflow-y-auto pr-0.5 no-scrollbar">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
-            item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
+            item.href === "/dashboard"
+              ? pathname === item.href
+              : pathname.startsWith(item.href);
 
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200",
+                "group relative flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[13px] font-semibold transition-all duration-150",
                 isActive
-                  ? "bg-[#fbf7ef]/10 text-[#fbf7ef]"
-                  : "text-[#c5beb3] hover:bg-[#fbf7ef]/5 hover:text-[#d7c8aa]"
+                  ? "bg-[#fbf7ef]/10 text-[#f0e8d8]"
+                  : "text-[#b0a898] hover:bg-[#fbf7ef]/5 hover:text-[#d4cabb]"
               )}
             >
+              {/* Active indicator — left edge line */}
               {isActive && (
-                <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#71836a]" />
+                <span className="absolute left-0 top-1/2 h-4 w-[2.5px] -translate-y-1/2 rounded-r-full bg-[#71836a]" />
               )}
               <Icon
                 className={cn(
-                  "h-[18px] w-[18px] shrink-0 transition-colors duration-200",
-                  isActive ? "text-[#8daa82]" : "text-[#a69e90] group-hover:text-[#d7c8aa]"
+                  "h-[17px] w-[17px] shrink-0 transition-colors duration-150",
+                  isActive ? "text-[#8daa82]" : "text-[#7a7264] group-hover:text-[#b0a898]"
                 )}
               />
               <span>{item.label}</span>
@@ -88,9 +98,10 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-5 rounded-2xl border border-[#fbf7ef]/8 bg-[#fbf7ef]/4 p-4">
+      {/* User footer */}
+      <div className="mt-4 rounded-[12px] border border-[#fbf7ef]/7 bg-[#fbf7ef]/4 p-3.5">
         <div className="flex items-center gap-3">
-          <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-[#fbf7ef]/12">
+          <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-[8px] border border-[#fbf7ef]/10">
             <Avatar
               src={userData?.avatar || user?.photoURL}
               alt="Profile"
@@ -98,17 +109,17 @@ export default function Sidebar() {
             />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-[#e8e0d3]">
+            <p className="truncate text-[13px] font-semibold text-[#e0d8ca]">
               {userData?.name || user?.displayName || "Your space"}
             </p>
-            <p className="mt-0.5 text-[10px] text-[#a69e90]">Personal, contained, ready.</p>
+            <p className="mt-0.5 text-[10px] text-[#7a7264]">Personal, contained, ready.</p>
           </div>
           <button
             type="button"
             onClick={handleLogout}
             aria-label="Log out"
             title="Log out"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#fbf7ef]/8 bg-[#fbf7ef]/4 text-[#c5beb3] transition-colors hover:border-[#b47a72]/30 hover:bg-[#b47a72]/10 hover:text-[#f2cbc6]"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] border border-[#fbf7ef]/7 bg-[#fbf7ef]/4 text-[#a09888] transition-colors hover:border-[#b47a72]/30 hover:bg-[#b47a72]/10 hover:text-[#e8b4ae]"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>

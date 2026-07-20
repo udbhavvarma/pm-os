@@ -3,14 +3,18 @@ import { GoogleAuthProvider, signInWithPopup, browserPopupRedirectResolver, User
 
 export async function loginWithGoogle(): Promise<User | null> {
   const provider = new GoogleAuthProvider();
+  const allowedEmail = process.env.NEXT_PUBLIC_ALLOWED_EMAIL?.trim().toLowerCase();
   const allowedEmailDomain = process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN?.replace(/^@/, "");
   provider.setCustomParameters({ ...(allowedEmailDomain ? { hd: allowedEmailDomain } : {}), prompt: "select_account" });
   const userCredential = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
   const email = userCredential.user?.email?.toLowerCase() || "";
+  if (allowedEmail && email !== allowedEmail) {
+    await signOut(auth);
+    throw new Error("This Google account is not authorized for this workspace.");
+  }
   if (allowedEmailDomain && email && !email.endsWith(`@${allowedEmailDomain}`)) {
     await signOut(auth);
     throw new Error("Unauthorized domain. Please use an authorized Google account.");
   }
   return userCredential.user;
 }
-

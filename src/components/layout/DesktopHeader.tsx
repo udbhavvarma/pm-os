@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Smartphone } from "lucide-react";
 import { useViewMode } from "@/context/ViewModeContext";
-import { IconAuxiliaire } from "@/components/ui/Icons";
+import { Search } from "lucide-react";
 
 export default function DesktopHeader() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export default function DesktopHeader() {
     event.preventDefault();
     const q = query.trim();
     if (!q) return;
-    router.push(`/auxiliaire?query=${encodeURIComponent(q)}`);
+    router.push(`/library?q=${encodeURIComponent(q)}`);
     setQuery("");
   };
 
@@ -25,14 +25,14 @@ export default function DesktopHeader() {
       <div className="readiness-line" aria-hidden="true" />
 
       <form onSubmit={submitSearch} className="relative w-full max-w-sm">
-        <IconAuxiliaire className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#71836a]" />
+        <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#71836a]" />
         <input
           id="desktop-auxiliaire-search"
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Ask Auxiliaire to plan, summarize, or find the next step..."
-          aria-label="Ask Auxiliaire"
+          placeholder="Search your library..."
+          aria-label="Search library"
           className="w-full rounded-[10px] border border-[#e4dbd0] bg-[#f4efe6] py-2 pl-9 pr-4 text-[12.5px] font-medium text-[#23231f] outline-none transition-all placeholder:text-[#8a8070] focus:border-[#71836a]/50 focus:bg-[#fffaf3] focus:ring-2 focus:ring-[#71836a]/8"
         />
       </form>

@@ -1,5 +1,4 @@
 ﻿import { auth } from "@/lib/firebase";
-import { logApiFailure } from "@/lib/monitoring";
 
 export function getApiUrl(path: string): string {
   return path;
@@ -33,16 +32,7 @@ export async function authedFetch(path: string, init: RequestInit = {}): Promise
   const token = await user.getIdToken();
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${token}`);
-  const startedAt = Date.now();
-  let response: Response;
-  try {
-    response = await fetch(getApiUrl(path), { ...init, headers });
-  } catch (error) {
-    logApiFailure({ endpoint: path, reason: "network", durationMs: Date.now() - startedAt });
-    throw error;
-  }
-  if (response.status >= 500) logApiFailure({ endpoint: path, reason: "server_5xx", status: response.status, durationMs: Date.now() - startedAt });
+  const response = await fetch(getApiUrl(path), { ...init, headers });
   if (response.status === 401 || response.status === 403) throw new ApiAuthError(response.status);
   return response;
 }
-

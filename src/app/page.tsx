@@ -12,15 +12,10 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [, setLogoClicks] = useState(0);
-  const [showReviewerLogin, setShowReviewerLogin] = useState(false);
-  const [reviewerEmail, setReviewerEmail] = useState("");
-  const [reviewerPassword, setReviewerPassword] = useState("");
-
-  const { signInWithGoogle, signInAsReviewer, user, loading } = useAuth();
+  const { signInWithGoogle, user, loading } = useAuth();
 
   useEffect(() => {
-    if (user && !loading) router.push("/dashboard");
+    if (user && !loading) router.push("/today");
   }, [user, loading, router]);
 
   const handleLoginClick = async () => {
@@ -31,19 +26,6 @@ export default function LoginPage() {
     } catch (err: unknown) {
       console.error(err);
       setError(friendlySignInError(err));
-      setIsLoading(false);
-    }
-  };
-
-  const handleReviewerSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError("");
-    setIsLoading(true);
-    try {
-      await signInAsReviewer(reviewerEmail.trim().toLowerCase(), reviewerPassword);
-    } catch (err: unknown) {
-      console.error(err);
-      setError("Those credentials did not work.");
       setIsLoading(false);
     }
   };
@@ -78,16 +60,6 @@ export default function LoginPage() {
             initial={{ opacity: 0, scale: 0.88 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.12, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            onClick={() => {
-              setLogoClicks((prev) => {
-                const next = prev + 1;
-                if (next >= 5) {
-                  setShowReviewerLogin(true);
-                  return 0;
-                }
-                return next;
-              });
-            }}
           >
             <AuxiliaireMark className="h-6 w-6" />
           </motion.button>
@@ -106,67 +78,7 @@ export default function LoginPage() {
           </motion.div>
         </div>
 
-        {showReviewerLogin ? (
-          <form onSubmit={handleReviewerSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="section-label block">Reviewer email</label>
-              <input
-                id="reviewer-email"
-                type="email"
-                value={reviewerEmail}
-                onChange={(event) => setReviewerEmail(event.target.value)}
-                placeholder="you@example.com"
-                className="w-full rounded-[12px] border border-[#fbf7ef]/10 bg-[#171713] px-4 py-3 text-[13px] font-medium text-[#fbf7ef] outline-none transition-colors placeholder:text-[#6a6355] focus:border-[#71836a]/50"
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="section-label block">Password</label>
-              <input
-                id="reviewer-password"
-                type="password"
-                value={reviewerPassword}
-                onChange={(event) => setReviewerPassword(event.target.value)}
-                placeholder="Password"
-                className="w-full rounded-[12px] border border-[#fbf7ef]/10 bg-[#171713] px-4 py-3 text-[13px] font-medium text-[#fbf7ef] outline-none transition-colors placeholder:text-[#6a6355] focus:border-[#71836a]/50"
-                required
-              />
-            </div>
-            {error && (
-              <p className="rounded-lg bg-[#b47a72]/12 px-3 py-2 text-center text-xs font-medium text-[#e8b4ae]">
-                {error}
-              </p>
-            )}
-            <div className="space-y-2.5 pt-1">
-              <button
-                type="submit"
-                id="reviewer-sign-in-btn"
-                disabled={isLoading}
-                className="btn-ink w-full py-3"
-              >
-                <span>Sign in</span>
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="h-4 w-4" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowReviewerLogin(false);
-                  setError("");
-                  setReviewerEmail("");
-                  setReviewerPassword("");
-                }}
-                className="w-full py-2 text-center text-xs text-[#7a7264] transition-colors hover:text-[#c5beb3]"
-              >
-                Return to Google sign in
-              </button>
-            </div>
-          </form>
-        ) : (
-          <motion.div
+        <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.38, duration: 0.42 }}
@@ -205,8 +117,7 @@ export default function LoginPage() {
               <span className="h-1 w-1 rounded-full bg-[#71836a]" />
               <span>Private access only</span>
             </div>
-          </motion.div>
-        )}
+        </motion.div>
       </motion.section>
     </main>
   );

@@ -7,6 +7,7 @@ import type { Auth, DecodedIdToken } from "firebase-admin/auth";
 import { logServerError } from "@/lib/serverMonitoring";
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "some-great-projects";
+const ALLOWED_EMAIL = process.env.ALLOWED_EMAIL?.trim().toLowerCase() || "";
 const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || "";
 
 const CORS_HEADERS: Record<string, string> = {
@@ -62,12 +63,11 @@ export async function verifyRequest(req: Request): Promise<AuthedUser> {
 
   const provider = decoded.firebase?.sign_in_provider;
   const email = (decoded.email || "").toLowerCase();
-  const isAnonymous = provider === "anonymous";
-  const isDomainUser =
-    (provider === "google.com" || provider === "password") &&
-    (!ALLOWED_DOMAIN || email.endsWith(ALLOWED_DOMAIN));
+  const isAnonymous = false;
+  const emailAllowed = ALLOWED_EMAIL ? email === ALLOWED_EMAIL : !ALLOWED_DOMAIN || email.endsWith(ALLOWED_DOMAIN);
+  const isDomainUser = provider === "google.com" && emailAllowed;
 
-  if (!isDomainUser && !isAnonymous) {
+  if (!isDomainUser) {
     throw new ForbiddenError("Caller is not authorized for this workspace");
   }
 

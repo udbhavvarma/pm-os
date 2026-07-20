@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { motion, useDragControls, useMotionValue } from "framer-motion";
 import {
   AlertTriangle,
@@ -26,7 +26,6 @@ export default function RecordingDock() {
   const rec = useRecording();
   const { canUseDesktop, viewMode } = useViewMode();
   const router = useRouter();
-  const pathname = usePathname();
 
   const isDesktop = canUseDesktop && viewMode === "desktop";
   const generating = rec.recordingStatus === "generating";
@@ -34,7 +33,7 @@ export default function RecordingDock() {
   const errored = rec.recordingStatus === "error";
   const active = rec.isRecording || generating || completed || errored;
   const isResult = completed || errored;
-  const isAuxiliaire = pathname.startsWith("/auxiliaire");
+  const isAuxiliaire = false;
 
   const boundsRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -96,7 +95,7 @@ export default function RecordingDock() {
   if (!active || rec.recorderOpen) return null;
 
   const openRecorder = () => {
-    router.push("/capture?record=1");
+    router.push("/inbox");
   };
 
   const safeBand: React.CSSProperties = isDesktop

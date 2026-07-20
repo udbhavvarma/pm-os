@@ -1,79 +1,121 @@
 "use client";
 
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import { reviewLoops } from "@/lib/readinessData";
-import { IconReview } from "@/components/ui/Icons";
+import { useMemo, useState } from "react";
+import { Archive, ArrowRight, Check, Clock3, Loader2, Pencil, RotateCcw, Sparkles } from "lucide-react";
+import { useWorkspace } from "@/context/WorkspaceContext";
+import { dayId, type Action, type Capture, type Item } from "@/lib/workspace";
+import { authedFetch } from "@/lib/api";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 10 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.06, duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const },
-  }),
-};
+type QueueEntry =
+  | { kind: "capture"; record: Capture }
+  | { kind: "action"; record: Action }
+  | { kind: "item"; record: Item };
 
 export default function ReviewPage() {
+  const { captures, actions, items, dailyStates, loaded, updateCapture, updateAction, updateItem, convertCaptureToAction, addAction, updateDailyState } = useWorkspace();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [askingAi, setAskingAi] = useState(false);
+  const [now] = useState(() => Date.now());
+  const queue = useMemo<QueueEntry[]>(() => [
+    ...captures.filter((capture) => capture.status === "inbox" && (capture.snoozedUntil ?? 0) <= now).map((record) => ({ kind: "capture" as const, record })),
+    ...actions.filter((action) => action.status === "open" && action.updatedAt < now - 7 * 86400000).map((record) => ({ kind: "action" as const, record })),
+    ...items.filter((item) => !item.archivedAt && item.reviewAt != null && item.reviewAt <= now).map((record) => ({ kind: "item" as const, record })),
+  ], [actions, captures, items, now]);
+  const current = queue[0];
+  const reviewedToday = Boolean(dailyStates.find((entry) => entry.id === dayId())?.reviewedAt);
+
+  if (!loaded) return <div className="flex min-h-[70vh] items-center justify-center text-sm text-[#5c5649]">Loading review…</div>;
+
+  const title = current?.record.title || (current?.kind === "capture" ? current.record.rawContent.slice(0, 80) : "");
+  const content = current?.kind === "capture" ? current.record.rawContent : current?.kind === "action" ? current.record.notes || "This action has been open for more than a week." : current?.record.content;
+
+  const keep = async () => {
+    if (!current) return;
+    setAiPrompt("");
+    if (current.kind === "capture") await updateCapture(current.record.id, { status: "processed" });
+    if (current.kind === "action") await updateAction(current.record.id, { updatedAt: Date.now() });
+    if (current.kind === "item") await updateItem(current.record.id, { lastReviewedAt: Date.now(), reviewAt: Date.now() + 30 * 86400000 });
+  };
+  const snooze = async () => {
+    if (!current) return;
+    setAiPrompt("");
+    const nextWeek = Date.now() + 7 * 86400000;
+    if (current.kind === "capture") await updateCapture(current.record.id, { snoozedUntil: nextWeek });
+    if (current.kind === "action") await updateAction(current.record.id, { updatedAt: Date.now() });
+    if (current.kind === "item") await updateItem(current.record.id, { reviewAt: nextWeek });
+  };
+  const archive = async () => {
+    if (!current) return;
+    setAiPrompt("");
+    if (current.kind === "capture") await updateCapture(current.record.id, { status: "archived" });
+    if (current.kind === "action") await updateAction(current.record.id, { status: "cancelled" });
+    if (current.kind === "item") await updateItem(current.record.id, { archivedAt: Date.now() });
+  };
+  const convert = async () => {
+    if (!current) return;
+    setAiPrompt("");
+    if (current.kind === "capture") await convertCaptureToAction(current.record.id);
+    if (current.kind === "item") { await addAction(current.record.title, { sourceItemId: current.record.id }); await updateItem(current.record.id, { reviewAt: Date.now() + 30 * 86400000 }); }
+  };
+  const saveDraft = async () => {
+    if (!current || !draft.trim()) return;
+    if (current.kind === "capture") await updateCapture(current.record.id, { title: draft.trim() });
+    if (current.kind === "action") await updateAction(current.record.id, { title: draft.trim() });
+    if (current.kind === "item") await updateItem(current.record.id, { title: draft.trim() });
+    setEditing(false);
+  };
+  const askAuxiliaire = async () => {
+    if (!current) return;
+    setAskingAi(true);
+    setAiPrompt("");
+    try {
+      const response = await authedFetch("/pm-os/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: "Help me review this item. Tell me why it may still matter and recommend one of: keep, update, convert to action, snooze, or archive. Be concise.", context: [`Type: ${current.kind}`, `Title: ${title}`, `Content: ${content || "none"}`] }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      setAiPrompt(result.message);
+    } catch (error) {
+      setAiPrompt(error instanceof Error ? error.message : "Groq review guidance is unavailable.");
+    } finally { setAskingAi(false); }
+  };
+
   return (
-    <main className="min-h-full bg-[#f4efe6] px-4 py-5 pb-24 text-[#23231f] @sm:px-5 @md:px-8 @md:py-6">
-      <section className="mx-auto max-w-5xl">
-        <motion.header initial="hidden" animate="visible" custom={0} variants={fadeUp} className="mb-5 @md:mb-6">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#686255]">Review</p>
-          <h1 className="mt-1.5 font-editorial text-2xl tracking-tight @sm:text-3xl @md:text-4xl @xl:text-5xl">Keep useful things alive</h1>
-          <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#3d3a33] @md:mt-3 @md:text-sm">
-            Review is not homework. It is where decisions, notes, questions, and commitments return only when they are useful.
-          </p>
-        </motion.header>
+    <main className="min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
+      <div className="mx-auto max-w-3xl">
+        <header><p className="section-label">One thing at a time</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Review</h1><p className="mt-2 text-sm text-[#5c5649]">{queue.length} item{queue.length === 1 ? "" : "s"} waiting. Stop whenever you feel current.</p></header>
 
-        <motion.section
-          initial="hidden"
-          animate="visible"
-          custom={1}
-          variants={fadeUp}
-          className="relative overflow-hidden rounded-2xl bg-[#171713] p-4 text-[#fbf7ef] @sm:rounded-[28px] @sm:p-5 @md:p-7"
-        >
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_20%_20%,rgba(113,131,106,0.06),transparent_60%)]" />
-          <div className="relative">
-            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#fbf7ef]/8 @sm:mb-5 @sm:h-12 @sm:w-12 @sm:rounded-2xl">
-              <IconReview className="h-5 w-5 text-[#d7c8aa] @sm:h-6 @sm:w-6" />
+        {current ? (
+          <section className="mt-7 overflow-hidden rounded-[24px] border border-[#ded6c8] bg-[#fbf7ef] shadow-xl shadow-[#23231f]/5">
+            <div className="bg-[#171713] px-5 py-4 text-white"><div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8daa82]">{current.kind}</span><span className="text-[10px] text-[#8a8278]">1 of {queue.length}</span></div></div>
+            <div className="p-5 @sm:p-7">
+              {editing ? (
+                <div className="flex gap-2"><input autoFocus value={draft} onChange={(event) => setDraft(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-[#ded6c8] px-3 py-2 text-sm outline-none" /><button type="button" onClick={saveDraft} className="rounded-xl bg-[#23231f] px-4 text-xs font-semibold text-white">Save</button></div>
+              ) : <h2 className="font-editorial text-2xl leading-tight">{title}</h2>}
+              {content && <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[#4a4740]">{content}</p>}
+
+              <div className="mt-5 rounded-xl bg-[#eef0e8] p-3">
+                <div className="flex items-center justify-between gap-3"><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#5b6b56]"><Sparkles className="h-3.5 w-3.5" /> Auxiliaire</p><button type="button" onClick={askAuxiliaire} disabled={askingAi} className="flex items-center gap-1.5 text-xs font-semibold text-[#4d5e48] disabled:opacity-50">{askingAi && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{aiPrompt ? "Ask again" : "What would you do?"}</button></div>
+                {aiPrompt && <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-[#3d4b39]">{aiPrompt}</p>}
+              </div>
+
+              <div className="mt-7 grid grid-cols-2 gap-2 @sm:grid-cols-5">
+                <button type="button" onClick={keep} className="flex items-center justify-center gap-1.5 rounded-xl bg-[#71836a] px-3 py-3 text-xs font-semibold text-white"><Check className="h-3.5 w-3.5" /> Keep</button>
+                <button type="button" onClick={() => { setDraft(title); setEditing(true); }} className="flex items-center justify-center gap-1.5 rounded-xl border border-[#ded6c8] px-3 py-3 text-xs font-semibold"><Pencil className="h-3.5 w-3.5" /> Update</button>
+                <button type="button" onClick={convert} disabled={current.kind === "action"} className="flex items-center justify-center gap-1.5 rounded-xl border border-[#ded6c8] px-3 py-3 text-xs font-semibold disabled:opacity-40"><ArrowRight className="h-3.5 w-3.5" /> Action</button>
+                <button type="button" onClick={snooze} className="flex items-center justify-center gap-1.5 rounded-xl border border-[#ded6c8] px-3 py-3 text-xs font-semibold"><Clock3 className="h-3.5 w-3.5" /> Snooze</button>
+                <button type="button" onClick={archive} className="flex items-center justify-center gap-1.5 rounded-xl border border-[#ded6c8] px-3 py-3 text-xs font-semibold text-[#8a5a54]"><Archive className="h-3.5 w-3.5" /> Archive</button>
+              </div>
             </div>
-            <h2 className="font-editorial text-xl tracking-tight @sm:text-2xl @md:text-3xl">Nothing urgent. One note is worth consolidating.</h2>
-            <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[#c5beb3] @sm:mt-3 @sm:text-sm @sm:leading-7">
-              Start with the item that reduces future remembering. Leave the rest quiet.
-            </p>
-            <Link
-              href="/auxiliaire?query=Run a gentle review with me. Surface only what matters today."
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#fbf7ef] px-4 py-3 text-[13px] font-semibold text-[#171713] transition-all hover:shadow-md @sm:mt-6 @sm:rounded-2xl @sm:text-sm"
-            >
-              Start review <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </motion.section>
-
-        <div className="mt-4 grid grid-cols-1 gap-4 @md:mt-5 @md:grid-cols-2">
-          {reviewLoops.map((loop, index) => {
-            const Icon = loop.icon;
-            return (
-              <motion.article
-                key={loop.id}
-                initial="hidden"
-                animate="visible"
-                custom={index + 2}
-                variants={fadeUp}
-                className="rounded-2xl border border-[#ded6c8] bg-[#fbf7ef] p-4 @sm:rounded-3xl @sm:p-5"
-              >
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#eef0e8] text-[#71836a] @sm:mb-4 @sm:h-11 @sm:w-11 @sm:rounded-2xl">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <h2 className="font-editorial text-[17px] tracking-tight @sm:text-lg">{loop.title}</h2>
-                <p className="mt-2 text-[13px] leading-6 text-[#3d3a33] @sm:text-sm">{loop.detail}</p>
-              </motion.article>
-            );
-          })}
-        </div>
-      </section>
+          </section>
+        ) : (
+          <section className="mt-7 rounded-[24px] border border-[#ded6c8] bg-[#fbf7ef] p-10 text-center">
+            <RotateCcw className="mx-auto h-7 w-7 text-[#71836a]" /><h2 className="mt-4 font-editorial text-2xl">You are current.</h2><p className="mt-2 text-sm text-[#5c5649]">Nothing useful needs your attention right now.</p>
+            {!reviewedToday && <button type="button" onClick={() => updateDailyState({ reviewedAt: Date.now() })} className="mt-6 rounded-xl bg-[#23231f] px-4 py-3 text-xs font-semibold text-white">Complete today’s review</button>}
+            {reviewedToday && <p className="mt-5 text-xs font-semibold text-[#71836a]">Today’s review is complete.</p>}
+          </section>
+        )}
+      </div>
     </main>
   );
 }

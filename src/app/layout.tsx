@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import AppShell from "@/components/layout/AppShell";
 import { AuthProvider } from "@/context/AuthContext";
-import { AssistantProvider } from "@/context/AssistantContext";
 import { ViewModeProvider } from "@/context/ViewModeContext";
 import { RecordingProvider } from "@/context/RecordingContext";
+import { WorkspaceProvider } from "@/context/WorkspaceContext";
 import "./globals.css";
 
 const primaryFont = Plus_Jakarta_Sans({
@@ -44,20 +44,20 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${primaryFont.variable} ${monoFont.variable} ${editorialFont.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
-          <AssistantProvider>
-            <ViewModeProvider>
+          <ViewModeProvider>
+            <WorkspaceProvider>
               <RecordingProvider>
                 <AppShell>{children}</AppShell>
               </RecordingProvider>
-            </ViewModeProvider>
-          </AssistantProvider>
+            </WorkspaceProvider>
+          </ViewModeProvider>
         </AuthProvider>
       </body>
     </html>
   );
 }
-

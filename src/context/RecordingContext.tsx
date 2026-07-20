@@ -1,10 +1,9 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { authedFetch } from "@/lib/api";
-import { saveCaptureRecord, secureGet, secureSave, type CaptureRecord } from "@/lib/db";
-import { friendlyRecordingError, friendlySummaryError } from "@/lib/userErrors";
-import { useAuth } from "./AuthContext";
+import { friendlyRecordingError } from "@/lib/userErrors";
+import { saveAudio } from "@/lib/audioStore";
+import { useWorkspace } from "./WorkspaceContext";
 
 export type TranscriptSegment = {
   id: string;
@@ -47,7 +46,7 @@ export type RecState = {
 const RecordingContext = createContext<RecState | undefined>(undefined);
 
 export function RecordingProvider({ children }: { children: React.ReactNode }) {
-  const { userData } = useAuth();
+  const { addCapture } = useWorkspace();
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -80,52 +79,6 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const saveCapture = async (transcript: string, summary: CaptureSummaryOutput) => {
-    const topic = summary.topicName?.trim() || summary.actionItems[0]?.owner || "Personal note";
-    const title = `Capture - ${topic} - ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
-    const record: CaptureRecord = {
-      id: `capture_${Date.now()}`,
-      title,
-      transcript,
-      summary: {
-        summary: summary.summary || [],
-        keyPoints: summary.keyPoints || [],
-        actionItems: summary.actionItems || [],
-        followUpDraft: summary.followUpDraft || "",
-      },
-      createdAt: Date.now(),
-    };
-
-    if (userData?.uid) await saveCaptureRecord(userData.uid, record);
-    else {
-      const existing = secureGet<CaptureRecord[]>("captures_demo") || [];
-      secureSave("captures_demo", [record, ...existing]);
-    }
-  };
-
-  const summarize = async (audioBlob: Blob) => {
-    setRecordingStatus("transcribing");
-    const form = new FormData();
-    form.append("file", audioBlob, "capture.webm");
-    const transcription = await authedFetch("/pm-os/api/transcribe", { method: "POST", body: form });
-    if (!transcription.ok) throw new Error("Transcription failed");
-    const transcribed = await transcription.json();
-    const transcript = transcribed.text || transcribed.transcript || "No transcription text captured.";
-
-    setTranscriptSegments([{ id: `seg_${Date.now()}`, speaker: "You", text: transcript, language: transcribed.language || "English" }]);
-    setRecordingStatus("generating");
-    const summaryRes = await authedFetch("/pm-os/api/capture-summary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transcript, userName: userData?.name, currentDate: new Date().toDateString() }),
-    });
-    if (!summaryRes.ok) throw new Error("Summary failed");
-    const summary = await summaryRes.json();
-    setCaptureSummary(summary);
-    await saveCapture(transcript, summary);
-    setRecordingStatus("completed");
-  };
-
   const onStart = async () => {
     try {
       setErrorMsg(null);
@@ -142,9 +95,16 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
       recorder.onstop = async () => {
         try {
           const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-          await summarize(audioBlob);
+          const audioId = `audio_${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
+          const audioUrl = await saveAudio(audioId, audioBlob);
+          await addCapture({
+            inputType: "voice",
+            rawContent: `Voice note · ${formatTime(timer)}`,
+            audioUrl,
+          });
+          setRecordingStatus("completed");
         } catch (error) {
-          setErrorMsg(friendlySummaryError(error));
+          setErrorMsg(error instanceof Error ? error.message : "The recording could not be saved.");
           setRecordingStatus("error");
         } finally {
           streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -226,4 +186,3 @@ export const useRecording = () => {
   if (!context) throw new Error("useRecording must be used within a RecordingProvider");
   return context;
 };
-

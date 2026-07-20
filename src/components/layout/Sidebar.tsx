@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Avatar from "@/components/ui/Avatar";
 import { useAuth } from "@/context/AuthContext";
@@ -10,23 +10,18 @@ import {
   AuxiliaireMark,
   IconToday,
   IconCapture,
-  IconAuxiliaire,
   IconKnowledge,
   IconReview,
-  IconWatchlist,
-  IconPatterns,
 } from "@/components/ui/Icons";
 
-type NavItem = { href: string; label: string; icon: typeof IconToday };
+type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Today", icon: IconToday },
-  { href: "/capture", label: "Capture", icon: IconCapture },
-  { href: "/auxiliaire", label: "Auxiliaire", icon: IconAuxiliaire },
-  { href: "/knowledge", label: "Knowledge", icon: IconKnowledge },
+  { href: "/today", label: "Today", icon: IconToday },
+  { href: "/inbox", label: "Inbox", icon: IconCapture },
+  { href: "/library", label: "Library", icon: IconKnowledge },
   { href: "/review", label: "Review", icon: IconReview },
-  { href: "/watchlist", label: "Watchlist", icon: IconWatchlist },
-  { href: "/patterns", label: "Patterns", icon: IconPatterns },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -46,7 +41,7 @@ export default function Sidebar() {
     <div className="flex h-full w-full flex-col bg-[#171713] px-4 py-5 text-[#fbf7ef]">
       {/* Brand */}
       <div className="mb-8 px-1 pt-2">
-        <Link href="/dashboard" className="group flex items-center gap-3">
+        <Link href="/today" className="group flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#fbf7ef]/10 bg-[#fbf7ef]/7 text-[#d0c4a8] transition-colors group-hover:border-[#d0c4a8]/25">
             <AuxiliaireMark className="h-[18px] w-[18px]" />
           </div>
@@ -66,7 +61,7 @@ export default function Sidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive =
-            item.href === "/dashboard"
+            item.href === "/today"
               ? pathname === item.href
               : pathname.startsWith(item.href);
 

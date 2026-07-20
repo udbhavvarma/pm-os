@@ -3,20 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { Settings } from "lucide-react";
 import {
   IconToday,
   IconCapture,
-  IconAuxiliaire,
+  IconReview,
   IconKnowledge,
-  IconWatchlist,
 } from "@/components/ui/Icons";
 
 const navItems = [
-  { href: "/dashboard", label: "Today", icon: IconToday },
-  { href: "/capture", label: "Capture", icon: IconCapture },
-  { href: "/auxiliaire", label: "Auxiliaire", icon: IconAuxiliaire, isHero: true },
-  { href: "/knowledge", label: "Knowledge", icon: IconKnowledge },
-  { href: "/watchlist", label: "Watch", icon: IconWatchlist },
+  { href: "/today", label: "Today", icon: IconToday },
+  { href: "/inbox", label: "Inbox", icon: IconCapture, isHero: true },
+  { href: "/library", label: "Library", icon: IconKnowledge },
+  { href: "/review", label: "Review", icon: IconReview },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function BottomNav() {
@@ -31,7 +31,7 @@ export default function BottomNav() {
     >
       {navItems.map((item) => {
         const isActive =
-          item.href === "/dashboard"
+          item.href === "/today"
             ? pathname === item.href
             : pathname.startsWith(item.href);
         const Icon = item.icon;

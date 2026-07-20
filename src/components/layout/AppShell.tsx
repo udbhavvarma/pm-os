@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { MotionConfig } from "framer-motion";
 import MobileLayout from "./MobileLayout";
 import DesktopLayout from "./DesktopLayout";
 import { useViewMode } from "@/context/ViewModeContext";
-import { initClientMonitoring } from "@/lib/monitoring";
 
 // Chooses between the mobile frame (default) and the desktop dashboard layout.
 // On web at desktop widths the user can switch to the dashboard view (the toggle
@@ -21,10 +19,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/";
 
-  // Start platform health monitoring once for the whole app (web + native):
-  // global error/rejection handlers + a backend heartbeat. Idempotent.
-  useEffect(() => initClientMonitoring(), []);
-
   const showDesktop = canUseDesktop && viewMode === "desktop" && !isLoginPage && pathname !== "/onboarding";
 
   return (
@@ -37,4 +31,3 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </MotionConfig>
   );
 }
-

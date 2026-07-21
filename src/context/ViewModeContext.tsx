@@ -18,14 +18,21 @@ export function ViewModeProvider({ children }: { children: React.ReactNode }) {
   const [canUseDesktop, setCanUseDesktop] = useState(false);
 
   useEffect(() => {
-    const update = () => setCanUseDesktop(window.innerWidth >= DESKTOP_MIN_WIDTH);
-    update();
-    window.addEventListener("resize", update);
+    let savedMode: ViewMode | null = null;
     try {
       const saved = localStorage.getItem("viewMode");
-      if (saved === "desktop" || saved === "mobile") setViewModeState(saved);
+      if (saved === "desktop" || saved === "mobile") savedMode = saved;
     } catch {}
-    return () => window.removeEventListener("resize", update);
+
+    const updateAvailability = () => {
+      const desktopAvailable = window.innerWidth >= DESKTOP_MIN_WIDTH;
+      setCanUseDesktop(desktopAvailable);
+    };
+    const desktopAvailable = window.innerWidth >= DESKTOP_MIN_WIDTH;
+    setCanUseDesktop(desktopAvailable);
+    setViewModeState(savedMode ?? (desktopAvailable ? "desktop" : "mobile"));
+    window.addEventListener("resize", updateAvailability);
+    return () => window.removeEventListener("resize", updateAvailability);
   }, []);
 
   const setViewMode = (mode: ViewMode) => {
@@ -37,4 +44,3 @@ export function ViewModeProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useViewMode = () => useContext(ViewModeContext);
-

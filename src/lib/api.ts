@@ -29,10 +29,18 @@ async function waitForUser(timeoutMs = 3000) {
 export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const user = await waitForUser();
   if (!user) throw new NotAuthenticatedError();
-  const token = await user.getIdToken();
-  const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${token}`);
-  const response = await fetch(getApiUrl(path), { ...init, headers });
+
+  const request = async (forceRefresh: boolean) => {
+    const token = await user.getIdToken(forceRefresh);
+    const headers = new Headers(init.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    return fetch(getApiUrl(path), { ...init, headers });
+  };
+
+  let response = await request(false);
+  if (response.status === 401 && auth.currentUser?.uid === user.uid) {
+    response = await request(true);
+  }
   if (response.status === 401 || response.status === 403) throw new ApiAuthError(response.status);
   return response;
 }

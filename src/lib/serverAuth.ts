@@ -11,9 +11,10 @@ const ALLOWED_EMAIL = process.env.ALLOWED_EMAIL?.trim().toLowerCase() || "";
 const ALLOWED_DOMAIN = process.env.ALLOWED_EMAIL_DOMAIN || "";
 
 const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://auxiliaire-os.vercel.app",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Vary": "Origin",
 };
 
 let adminAuthPromise: Promise<Auth> | null = null;

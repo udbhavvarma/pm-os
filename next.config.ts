@@ -20,9 +20,11 @@ const nextConfig: NextConfig = {
       { key: "X-Frame-Options", value: "DENY" },
       { key: "X-XSS-Protection", value: "1; mode=block" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-      { key: "Access-Control-Allow-Origin", value: "*" },
+      { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+      { key: "Access-Control-Allow-Origin", value: "https://auxiliaire-os.vercel.app" },
       { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, DELETE, OPTIONS" },
       { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
+      { key: "Vary", value: "Origin" },
     ];
 
     if (isProd) {

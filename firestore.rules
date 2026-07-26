@@ -27,6 +27,10 @@ service cloud.firestore {
       allow read, write: if ownsWorkspace(uid);
     }
 
+    match /users/{uid}/activities/{activityId} {
+      allow read, write: if ownsWorkspace(uid);
+    }
+
     match /users/{uid}/diagnostics/{eventId} {
       allow read, write: if ownsWorkspace(uid);
     }

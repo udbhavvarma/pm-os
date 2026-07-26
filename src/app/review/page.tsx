@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Archive, ArrowRight, Check, Clock3, Loader2, Pencil, RotateCcw, Sparkles } from "lucide-react";
+import { Archive, ArrowRight, CalendarRange, Check, Clock3, Loader2, Pencil, RotateCcw, Sparkles } from "lucide-react";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { dayId, type Action, type Capture, type Item } from "@/lib/workspace";
 import { authedFetch } from "@/lib/api";
 import { useFeedback } from "@/context/FeedbackContext";
+import ReflectionStudio from "@/components/review/ReflectionStudio";
 
 type QueueEntry =
   | { kind: "capture"; record: Capture }
@@ -19,6 +20,7 @@ export default function ReviewPage() {
   const [draft, setDraft] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [askingAi, setAskingAi] = useState(false);
+  const [preparingWeekly, setPreparingWeekly] = useState(false);
   const [now] = useState(() => Date.now());
   const queue = useMemo<QueueEntry[]>(() => [
     ...captures.filter((capture) => capture.status === "inbox" && (capture.snoozedUntil ?? 0) <= now).map((record) => ({ kind: "capture" as const, record })),
@@ -26,7 +28,11 @@ export default function ReviewPage() {
     ...items.filter((item) => !item.archivedAt && item.reviewAt != null && item.reviewAt <= now).map((record) => ({ kind: "item" as const, record })),
   ], [actions, captures, items, now]);
   const current = queue[0];
-  const reviewedToday = Boolean(dailyStates.find((entry) => entry.id === dayId())?.reviewedAt);
+  const todayState = dailyStates.find((entry) => entry.id === dayId());
+  const reviewedToday = Boolean(todayState?.reviewedAt);
+  const completedThisWeek = actions.filter((action) => action.completedAt != null && action.completedAt >= now - 7 * 86400000);
+  const unresolvedDecisions = items.filter((item) => item.type === "decision" && !item.archivedAt && (item.reviewAt ?? item.updatedAt) <= now);
+  const livingKnowledgeDue = items.filter((item) => item.keepCurrent && !item.archivedAt && (item.nextResearchAt ?? 0) <= now);
 
   if (!loaded) return <div className="flex min-h-[70vh] items-center justify-center text-sm text-[#5c5649]">Loading review…</div>;
 
@@ -45,9 +51,9 @@ export default function ReviewPage() {
     if (!current) return;
     setAiPrompt("");
     const nextWeek = Date.now() + 7 * 86400000;
-    if (current.kind === "capture") await updateCapture(current.record.id, { snoozedUntil: nextWeek });
-    if (current.kind === "action") await updateAction(current.record.id, { updatedAt: Date.now() });
-    if (current.kind === "item") await updateItem(current.record.id, { reviewAt: nextWeek });
+    if (current.kind === "capture") await updateCapture(current.record.id, { snoozedUntil: nextWeek, snoozeCount: (current.record.snoozeCount ?? 0) + 1 });
+    if (current.kind === "action") await updateAction(current.record.id, { updatedAt: Date.now(), snoozeCount: (current.record.snoozeCount ?? 0) + 1 });
+    if (current.kind === "item") await updateItem(current.record.id, { reviewAt: nextWeek, snoozeCount: (current.record.snoozeCount ?? 0) + 1 });
     notify("Snoozed for one week.", "info");
   };
   const archive = async () => {
@@ -86,13 +92,41 @@ export default function ReviewPage() {
     } finally { setAskingAi(false); }
   };
 
+  const prepareWeeklyReview = async () => {
+    setPreparingWeekly(true);
+    try {
+      const context = [
+        `Completed in the last 7 days (${completedThisWeek.length}): ${completedThisWeek.map((action) => action.title).join("; ") || "none"}`,
+        `Still open (${actions.filter((action) => action.status === "open").length}): ${actions.filter((action) => action.status === "open").slice(0, 12).map((action) => action.title).join("; ") || "none"}`,
+        `Unresolved decisions (${unresolvedDecisions.length}): ${unresolvedDecisions.map((item) => item.title).join("; ") || "none"}`,
+        `Inbox captures (${captures.filter((capture) => capture.status === "inbox").length})`,
+        `Living knowledge due (${livingKnowledgeDue.length}): ${livingKnowledgeDue.map((item) => item.title).join("; ") || "none"}`,
+      ];
+      const response = await authedFetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: "Prepare a concise weekly reset. Use sections: Progress, Stuck or unresolved, Knowledge to refresh, and Recommended focus for next week. Do not make changes; give recommendations for the user to approve.", context }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      await updateDailyState({ weeklyReviewSummary: result.message, weeklyReviewAt: Date.now() });
+      notify("Your weekly reset is ready for review.");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Auxiliaire could not prepare the weekly reset.", "error");
+    } finally { setPreparingWeekly(false); }
+  };
+
   return (
     <main className="min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
       <div className="mx-auto max-w-3xl">
         <header><p className="section-label">One thing at a time</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Review</h1><p className="mt-2 text-sm text-[#5c5649]">{queue.length} item{queue.length === 1 ? "" : "s"} waiting. Stop whenever you feel current.</p></header>
 
+        <ReflectionStudio />
+
+        <section className="mt-5 rounded-[20px] bg-[#171713] p-5 text-[#fbf7ef]">
+          <div className="flex items-start justify-between gap-4"><div><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#8daa82]"><CalendarRange className="h-4 w-4" /> Weekly reset</p><h2 className="mt-2 font-editorial text-xl">See the week as a whole</h2><p className="mt-2 text-[11px] leading-5 text-[#aaa294]">{completedThisWeek.length} completed · {unresolvedDecisions.length} unresolved decision{unresolvedDecisions.length === 1 ? "" : "s"} · {livingKnowledgeDue.length} knowledge update{livingKnowledgeDue.length === 1 ? "" : "s"} due</p></div><button type="button" onClick={prepareWeeklyReview} disabled={preparingWeekly} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#fbf7ef] px-3 py-2.5 text-xs font-semibold text-[#171713] disabled:opacity-50">{preparingWeekly ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}{todayState?.weeklyReviewSummary ? "Refresh" : "Prepare"}</button></div>
+          {todayState?.weeklyReviewSummary && <div className="mt-4 whitespace-pre-wrap rounded-xl bg-[#fbf7ef]/8 p-4 text-xs leading-6 text-[#e4ddd1]">{todayState.weeklyReviewSummary}</div>}
+          {todayState?.weeklyReviewSummary && <p className="mt-3 text-[10px] text-[#8f897f]">Auxiliaire recommends; you approve changes with the review controls below.</p>}
+        </section>
+
         {current ? (
-          <section className="mt-7 overflow-hidden rounded-[24px] border border-[#ded6c8] bg-[#fbf7ef] shadow-xl shadow-[#23231f]/5">
+          <section className="mt-5 overflow-hidden rounded-[24px] border border-[#ded6c8] bg-[#fbf7ef] shadow-xl shadow-[#23231f]/5">
             <div className="bg-[#171713] px-5 py-4 text-white"><div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8daa82]">{current.kind}</span><span className="text-[10px] text-[#8a8278]">1 of {queue.length}</span></div></div>
             <div className="p-5 @sm:p-7">
               {editing ? (
@@ -115,7 +149,7 @@ export default function ReviewPage() {
             </div>
           </section>
         ) : (
-          <section className="mt-7 rounded-[24px] border border-[#ded6c8] bg-[#fbf7ef] p-10 text-center">
+          <section className="mt-5 rounded-[24px] border border-[#ded6c8] bg-[#fbf7ef] p-10 text-center">
             <RotateCcw className="mx-auto h-7 w-7 text-[#71836a]" /><h2 className="mt-4 font-editorial text-2xl">You are current.</h2><p className="mt-2 text-sm text-[#5c5649]">Nothing useful needs your attention right now.</p>
             {!reviewedToday && <button type="button" onClick={() => updateDailyState({ reviewedAt: Date.now() })} className="mt-6 rounded-xl bg-[#23231f] px-4 py-3 text-xs font-semibold text-white">Complete today’s review</button>}
             {reviewedToday && <p className="mt-5 text-xs font-semibold text-[#71836a]">Today’s review is complete.</p>}

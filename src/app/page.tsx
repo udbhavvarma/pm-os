@@ -12,11 +12,11 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { signInWithGoogle, user, loading } = useAuth();
+  const { signInWithGoogle, user, userData, loading } = useAuth();
 
   useEffect(() => {
-    if (user && !loading) router.push("/today");
-  }, [user, loading, router]);
+    if (user && !loading && userData) router.push(userData.onboarded ? "/today" : "/onboarding");
+  }, [user, userData, loading, router]);
 
   const handleLoginClick = async () => {
     setError("");

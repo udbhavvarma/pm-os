@@ -1,10 +1,12 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { MotionConfig } from "framer-motion";
 import MobileLayout from "./MobileLayout";
 import DesktopLayout from "./DesktopLayout";
 import { useViewMode } from "@/context/ViewModeContext";
+import { useAuth } from "@/context/AuthContext";
 
 // Chooses between the mobile frame (default) and the desktop dashboard layout.
 // On web at desktop widths the user can switch to the dashboard view (the toggle
@@ -16,8 +18,14 @@ import { useViewMode } from "@/context/ViewModeContext";
 // instead of movement. CSS-level animation is handled in globals.css.
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { viewMode, canUseDesktop } = useViewMode();
+  const { user, userData, loading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const isLoginPage = pathname === "/";
+
+  useEffect(() => {
+    if (!loading && user && userData && !userData.onboarded && pathname !== "/" && pathname !== "/onboarding") router.replace("/onboarding");
+  }, [loading, pathname, router, user, userData]);
 
   const showDesktop = canUseDesktop && viewMode === "desktop" && !isLoginPage && pathname !== "/onboarding";
 

@@ -13,5 +13,5 @@ export default function SyncIndicator() {
     error: [TriangleAlert, "Sync needs attention", ""],
   }[syncStatus] as [typeof Check, string, string];
   const [Icon, label, className] = state;
-  return <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#7a7264]"><Icon className={`h-3 w-3 ${className}`} />{label}</span>;
+  return <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#7a7264]"><Icon className={`h-3 w-3 ${className}`} />{label}</span>;
 }

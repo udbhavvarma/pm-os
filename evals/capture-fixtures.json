@@ -1,0 +1,23 @@
+[
+  {
+    "name": "explicit product decision",
+    "input": "We decided to test guided onboarding for enterprise accounts. Priya will model capacity before Friday.",
+    "expectedType": "decision",
+    "expectsAction": true,
+    "requiredTheme": "enterprise"
+  },
+  {
+    "name": "research note without invented action",
+    "input": "Research note: customers reach activation faster when one measurable first outcome is agreed during kickoff.",
+    "expectedType": "knowledge",
+    "expectsAction": false,
+    "requiredTheme": "onboarding"
+  },
+  {
+    "name": "direct follow-up",
+    "input": "Follow up with Arjun about the three procurement stalls next Tuesday.",
+    "expectedType": "note",
+    "expectsAction": true,
+    "requiredTheme": "procurement"
+  }
+]

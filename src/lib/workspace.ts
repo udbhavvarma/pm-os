@@ -26,6 +26,11 @@ export interface Capture {
   aiSummary?: string;
   aiThemes?: string[];
   aiDecisions?: string[];
+  processingStatus?: "idle" | "queued" | "processing" | "ready" | "error";
+  processingError?: string;
+  processedAt?: number;
+  aiConfidence?: number;
+  aiUncertainties?: string[];
   status: "inbox" | "processed" | "archived";
   suggestedType?: ItemType;
   suggestedActions?: SuggestedAction[];
@@ -88,6 +93,8 @@ export interface Action {
   updatedAt: number;
   completedAt?: number;
   snoozeCount?: number;
+  deferredUntil?: number;
+  outcome?: string;
 }
 
 export interface DailyState {
@@ -210,7 +217,7 @@ export function rankActions(actions: Action[], now = Date.now()): RankedAction[]
   const endOfToday = startOfToday.getTime() + 86400000;
 
   return actions
-    .filter((action) => action.status === "open")
+    .filter((action) => action.status === "open" && (action.deferredUntil ?? 0) <= now)
     .map((action) => {
       let score = action.priority === "high" ? 40 : action.priority === "low" ? 0 : 15;
       const reasons: string[] = [];
@@ -236,7 +243,7 @@ export function buildReadinessBrief(data: WorkspaceData, now = Date.now()): Read
 
   return {
     focus: openActions[0] ?? null,
-    openLoopCount: openActions.length,
+    openLoopCount: data.actions.filter((action) => action.status === "open").length,
     inboxCount: inbox.length,
     decisionCount: decisions.length,
     reviewCount: inbox.length + dueItems.length,

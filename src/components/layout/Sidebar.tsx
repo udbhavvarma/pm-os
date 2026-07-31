@@ -20,9 +20,8 @@ type NavItem = { href: string; label: string; icon: React.ComponentType<{ classN
 const navItems: NavItem[] = [
   { href: "/today", label: "Today", icon: IconToday },
   { href: "/inbox", label: "Inbox", icon: IconCapture },
-  { href: "/library", label: "Library", icon: IconKnowledge },
+  { href: "/library", label: "Memory", icon: IconKnowledge },
   { href: "/review", label: "Review", icon: IconReview },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -50,7 +49,7 @@ export default function Sidebar() {
             <h1 className="font-editorial text-[16px] leading-tight tracking-tight text-[#f0e8d8]">
               Auxiliaire
             </h1>
-            <p className="mt-0.5 text-[10px] font-medium tracking-wide text-[#7a7264]">
+            <p className="mt-0.5 text-[12px] font-medium tracking-wide text-[#7a7264]">
               Private daily intelligence
             </p>
           </div>
@@ -109,8 +108,9 @@ export default function Sidebar() {
             <p className="truncate text-[13px] font-semibold text-[#e0d8ca]">
               {userData?.name || user?.displayName || "Your space"}
             </p>
-            <p className="mt-0.5 text-[10px] text-[#7a7264]">Personal, contained, ready.</p>
+            <p className="mt-0.5 text-[12px] text-[#7a7264]">Personal, contained, ready.</p>
           </div>
+          <Link href="/settings" aria-label="Settings" title="Settings" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] border border-[#fbf7ef]/7 bg-[#fbf7ef]/4 text-[#a09888] transition-colors hover:bg-white/10 hover:text-white"><Settings className="h-3.5 w-3.5" /></Link>
           <button
             type="button"
             onClick={handleLogout}

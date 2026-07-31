@@ -38,7 +38,7 @@ export default function CaptureComposer({ compact = false }: { compact?: boolean
           className={`${compact ? "min-h-20" : "min-h-28"} w-full resize-none bg-transparent px-1 py-1 text-[14px] leading-6 text-[#23231f] outline-none placeholder:text-[#8a8278]`}
         />
         <div className="mt-2 flex items-center justify-between gap-3 border-t border-[#eee6d8] pt-3">
-          <div className="flex items-center gap-2 text-[11px] font-medium text-[#7a7264]">
+          <div className="flex items-center gap-2 text-[12px] font-medium text-[#7a7264]">
             <Link2 className="h-3.5 w-3.5" /> Type or paste. Sort it later.
           </div>
           <div className="flex items-center gap-2">

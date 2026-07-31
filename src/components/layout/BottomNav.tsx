@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Settings } from "lucide-react";
 import {
   IconToday,
   IconCapture,
@@ -15,9 +14,8 @@ import NavPendingIndicator from "./NavPendingIndicator";
 const navItems = [
   { href: "/today", label: "Today", icon: IconToday },
   { href: "/inbox", label: "Inbox", icon: IconCapture, isHero: true },
-  { href: "/library", label: "Library", icon: IconKnowledge },
+  { href: "/library", label: "Memory", icon: IconKnowledge },
   { href: "/review", label: "Review", icon: IconReview },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function BottomNav() {
@@ -58,7 +56,7 @@ export default function BottomNav() {
               </div>
               <span
                 className={cn(
-                  "mt-1 text-[9px] font-semibold tracking-wide",
+                  "mt-1 text-[12px] font-semibold tracking-wide",
                   isActive ? "text-[#23231f]" : "text-[#71836a]"
                 )}
               >
@@ -87,7 +85,7 @@ export default function BottomNav() {
             <Icon className={cn("h-[19px] w-[19px]", isActive && "text-[#23231f]")} />
             <span
               className={cn(
-                "mt-1 text-[9px] font-semibold tracking-wide",
+                "mt-1 text-[12px] font-semibold tracking-wide",
                 isActive ? "text-[#23231f]" : "text-[#8a8070]"
               )}
             >

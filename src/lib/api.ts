@@ -1,5 +1,8 @@
 ﻿import { auth } from "@/lib/firebase";
 
+import { isDemoSession } from "@/context/DemoModeContext";
+import { demoIntelligenceResponse } from "@/lib/demoIntelligence";
+
 export function getApiUrl(path: string): string {
   return path;
 }
@@ -27,6 +30,7 @@ async function waitForUser(timeoutMs = 3000) {
 }
 
 export async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  if (isDemoSession()) return demoIntelligenceResponse({ path, init });
   const user = await waitForUser();
   if (!user) throw new NotAuthenticatedError();
 

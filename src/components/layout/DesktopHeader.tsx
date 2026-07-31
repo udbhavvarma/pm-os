@@ -33,8 +33,8 @@ export default function DesktopHeader() {
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search your library..."
-          aria-label="Search library"
+          placeholder="Search your memory..."
+          aria-label="Search memory"
           className="w-full rounded-[10px] border border-[#e4dbd0] bg-[#f4efe6] py-2 pl-9 pr-4 text-[12.5px] font-medium text-[#23231f] outline-none transition-all placeholder:text-[#8a8070] focus:border-[#71836a]/50 focus:bg-[#fffaf3] focus:ring-2 focus:ring-[#71836a]/8"
         />
       </form>

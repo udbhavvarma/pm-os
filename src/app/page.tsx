@@ -1,124 +1,97 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, BrainCircuit, Check, CircleDot, GitCompareArrows, Link2, Loader2, LockKeyhole, Mic2, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { friendlySignInError } from "@/lib/userErrors";
 import { AuxiliaireMark } from "@/components/ui/Icons";
 
-export default function LoginPage() {
+const workflow = [
+  { number: "01", title: "Capture the evidence", copy: "Drop a meeting note, research link, voice thought, or unresolved question. The original is saved before AI touches it.", icon: Mic2 },
+  { number: "02", title: "Make the decision legible", copy: "Auxiliaire proposes the decision, assumptions, uncertainties, and concrete follow-ups. You approve every change.", icon: BrainCircuit },
+  { number: "03", title: "Return to the outcome", copy: "Every action keeps its source. Reviews compare what you expected with what actually happened.", icon: GitCompareArrows },
+];
+
+export default function LandingPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { signInWithGoogle, user, userData, loading } = useAuth();
+  const { signInWithGoogle, user, loading } = useAuth();
 
-  useEffect(() => {
-    if (user && !loading && userData) router.push(userData.onboarded ? "/today" : "/onboarding");
-  }, [user, userData, loading, router]);
-
-  const handleLoginClick = async () => {
+  const signIn = async () => {
     setError("");
     setIsLoading(true);
     try {
       await signInWithGoogle();
-    } catch (err: unknown) {
-      console.error(err);
-      setError(friendlySignInError(err));
+      router.push("/today");
+    } catch (cause) {
+      setError(friendlySignInError(cause));
       setIsLoading(false);
     }
   };
 
   return (
-    <main className="relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden bg-[#171713] p-6 text-[#fbf7ef]">
-      {/* Layered ambient gradients — warm and composed, not neon */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_50%_35%,rgba(113,131,106,0.07),transparent_70%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_50%_70%_at_15%_90%,rgba(185,130,79,0.05),transparent_65%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_40%_50%_at_85%_10%,rgba(111,135,145,0.04),transparent_60%)]" />
+    <main className="min-h-dvh overflow-hidden bg-[#171713] text-[#f0e8d8]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(ellipse_70%_55%_at_50%_10%,rgba(113,131,106,0.18),transparent_72%)]" />
+      <nav className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-5 py-5 md:px-8" aria-label="Public navigation">
+        <Link href="/" className="flex items-center gap-3" aria-label="Auxiliaire home">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#d4c9ae]"><AuxiliaireMark className="h-5 w-5" /></span>
+          <span><span className="block font-editorial text-lg">Auxiliaire</span><span className="block text-[12px] text-[#918a7e]">Decision memory for product builders</span></span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <a href="#how" className="hidden rounded-lg px-3 py-2 text-[13px] font-semibold text-[#aaa294] hover:text-white sm:block">How it works</a>
+          {user ? <Link href="/today" className="rounded-xl bg-[#f0e8d8] px-4 py-2.5 text-[13px] font-bold text-[#171713]">Open workspace</Link> : <button type="button" onClick={signIn} disabled={isLoading || loading} className="rounded-xl border border-white/12 px-4 py-2.5 text-[13px] font-bold text-[#ded6c8] hover:bg-white/5 disabled:opacity-50">Sign in</button>}
+        </div>
+      </nav>
 
-      {/* Fine horizon rule at top — the readiness line applied to dark bg */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#71836a]/25 to-transparent" />
-
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-        className="relative w-full max-w-[380px] rounded-[24px] border border-[#fbf7ef]/8 bg-[#1e1c16] p-8 shadow-2xl shadow-black/40"
-      >
-        {/* Top accent — signature hairline */}
-        <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#71836a]/35 to-transparent" />
-        {/* Bottom accent — softer */}
-        <div className="absolute inset-x-16 bottom-0 h-px bg-gradient-to-r from-transparent via-[#b9824f]/12 to-transparent" />
-
-        {/* Logo + brand */}
-        <div className="mb-9 space-y-5">
-          <motion.button
-            type="button"
-            aria-label="Auxiliaire"
-            className="flex h-[52px] w-[52px] items-center justify-center rounded-[14px] border border-[#fbf7ef]/10 bg-[#fbf7ef]/6 text-[#d4c9ae] transition-all hover:border-[#d4c9ae]/25 hover:bg-[#fbf7ef]/9"
-            initial={{ opacity: 0, scale: 0.88 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.12, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <AuxiliaireMark className="h-6 w-6" />
-          </motion.button>
-
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.22, duration: 0.45 }}
-          >
-            <h1 className="font-editorial text-[32px] leading-none tracking-tight text-[#f0e8d8]">
-              Auxiliaire
-            </h1>
-            <p className="mt-3 max-w-[280px] text-[13px] leading-[1.65] text-[#b5ad9e]">
-              A private auxiliary intelligence for your day, your memory, and the next clean step.
-            </p>
-          </motion.div>
+      <section className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-16 md:px-8 lg:grid-cols-[1.02fr_0.98fr] lg:pb-28 lg:pt-24">
+        <div>
+          <p className="inline-flex items-center gap-2 rounded-full border border-[#71836a]/35 bg-[#71836a]/10 px-3 py-1.5 text-[12px] font-bold text-[#a9bda1]"><Sparkles className="h-3.5 w-3.5" /> Built for product decisions, not generic chat</p>
+          <h1 className="mt-7 max-w-3xl font-editorial text-[46px] leading-[1.04] tracking-[-0.035em] text-[#f5eddd] sm:text-[62px] lg:text-[72px]">Remember why you decided. Learn from what happened.</h1>
+          <p className="mt-6 max-w-xl text-[17px] leading-8 text-[#b9b1a4]">Auxiliaire turns messy research, meeting notes, and voice thoughts into source-linked decisions and next steps—then brings the original evidence back when the outcome is clear.</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link href="/demo" className="group flex items-center justify-center gap-2 rounded-[14px] bg-[#f0e8d8] px-5 py-3.5 text-[14px] font-bold text-[#171713] shadow-xl shadow-black/20">Open the sample workspace <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></Link>
+            {!user && <button type="button" onClick={signIn} disabled={isLoading || loading} className="flex items-center justify-center gap-2 rounded-[14px] border border-white/12 px-5 py-3.5 text-[14px] font-bold text-[#ded6c8] hover:bg-white/5 disabled:opacity-50">{isLoading || loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LockKeyhole className="h-4 w-4" />} Use my private workspace</button>}
+          </div>
+          {error && <p role="alert" className="mt-4 max-w-xl rounded-xl border border-[#b47a72]/25 bg-[#b47a72]/10 px-4 py-3 text-[13px] text-[#e8b4ae]">{error}</p>}
+          <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-[#918a7e]">
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8daa82]" /> No sign-in for the demo</span>
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8daa82]" /> Human-approved AI changes</span>
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8daa82]" /> Exportable workspace</span>
+          </div>
         </div>
 
-        <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.38, duration: 0.42 }}
-            className="space-y-4"
-          >
-            <button
-              id="google-sign-in-btn"
-              onClick={handleLoginClick}
-              disabled={isLoading || loading}
-              className="group flex w-full items-center justify-between rounded-[14px] bg-[#f0e8d8] px-4 py-3.5 font-semibold text-[#1e1c16] shadow-md shadow-black/20 transition-all hover:bg-[#e8dfd0] hover:shadow-lg disabled:opacity-60"
-            >
-              <div className="flex items-center gap-3">
-                {/* Google logomark */}
-                <svg className="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                <span className="text-[13px]">Continue with Google</span>
-              </div>
-              {isLoading || loading ? (
-                <Loader2 className="h-4 w-4 animate-spin shrink-0 opacity-60" />
-              ) : (
-                <ArrowRight className="h-4 w-4 shrink-0 text-[#595448] transition-transform group-hover:translate-x-0.5" />
-              )}
-            </button>
-
-            {error && (
-              <p className="rounded-lg bg-[#b47a72]/12 px-3 py-2 text-center text-xs font-medium text-[#e8b4ae]">
-                {error}
-              </p>
-            )}
-
-            <div className="flex items-center justify-center gap-2 pt-1 text-xs text-[#6a6355]">
-              <span className="h-1 w-1 rounded-full bg-[#71836a]" />
-              <span>Private access only</span>
+        <div className="relative rounded-[28px] border border-white/10 bg-[#211f19] p-3 shadow-2xl shadow-black/45">
+          <div className="rounded-[22px] bg-[#f4efe6] p-5 text-[#23231f] sm:p-6">
+            <div className="flex items-center justify-between"><div><p className="section-label">Friday, pricing review</p><h2 className="mt-2 font-editorial text-3xl">One decision needs evidence.</h2></div><span className="rounded-full bg-[#eef0e8] px-3 py-1.5 text-[12px] font-bold text-[#4d5e48]">Sample</span></div>
+            <div className="mt-5 rounded-[18px] bg-[#171713] p-5 text-[#f5eddd]"><p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8daa82]">Start here</p><p className="mt-3 font-editorial text-xl">Model annual-plan economics</p><p className="mt-2 text-[13px] leading-6 text-[#aaa294]">Recommended because it is high priority, due tomorrow, and linked to the pricing decision.</p></div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-[16px] border border-[#ded6c8] bg-[#fbf7ef] p-4"><div className="flex items-center gap-2 text-[13px] font-bold"><Link2 className="h-4 w-4 text-[#71836a]" /> Connected evidence</div><p className="mt-3 text-[13px] leading-6 text-[#686255]">3 procurement stalls · activation healthy after setup · rollout risk may outweigh price.</p></div>
+              <div className="rounded-[16px] border border-[#d5ddcf] bg-[#eef0e8] p-4"><div className="flex items-center gap-2 text-[13px] font-bold text-[#3d4b39]"><CircleDot className="h-4 w-4" /> Forecast</div><p className="mt-3 text-[13px] leading-6 text-[#52614d]">2 of the next 3 accounts accept annual terms with guided rollout.</p></div>
             </div>
-        </motion.div>
-      </motion.section>
+          </div>
+        </div>
+      </section>
+
+      <section id="how" className="border-y border-white/8 bg-[#1c1b16]">
+        <div className="mx-auto max-w-6xl px-5 py-20 md:px-8">
+          <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#8daa82]">One dependable loop</p>
+          <h2 className="mt-4 max-w-2xl font-editorial text-4xl leading-tight sm:text-5xl">From scattered evidence to a better next decision.</h2>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">{workflow.map(({ number, title, copy, icon: Icon }) => <article key={number} className="rounded-[20px] border border-white/8 bg-white/[0.035] p-5"><div className="flex items-center justify-between"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#71836a]/15 text-[#a9bda1]"><Icon className="h-5 w-5" /></span><span className="font-mono text-[12px] text-[#706b62]">{number}</span></div><h3 className="mt-6 font-editorial text-2xl">{title}</h3><p className="mt-3 text-[14px] leading-7 text-[#aaa294]">{copy}</p></article>)}</div>
+        </div>
+      </section>
+
+      <section className="mx-auto grid max-w-6xl gap-8 px-5 py-20 md:px-8 lg:grid-cols-2">
+        <div><p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#8daa82]">Why it is different</p><h2 className="mt-4 font-editorial text-4xl leading-tight">The memory stays attached to the work.</h2><p className="mt-5 text-[15px] leading-8 text-[#aaa294]">Most tools separate notes, tasks, research, and retrospectives. Auxiliaire preserves the chain between them, so a future review can recover the evidence instead of reconstructing it from memory.</p></div>
+        <div className="grid gap-3">
+          {["Actions retain their source capture or decision.", "AI proposes structure; the user approves mutations.", "Forecasts are frozen before outcomes are known.", "Research updates are stored separately from original notes."].map((item) => <div key={item} className="flex gap-3 rounded-[16px] border border-white/8 bg-white/[0.035] p-4 text-[14px] leading-6 text-[#c5beb3]"><Check className="mt-1 h-4 w-4 shrink-0 text-[#8daa82]" /> {item}</div>)}
+        </div>
+      </section>
+
+      <section className="border-t border-white/8 px-5 py-16 text-center"><h2 className="font-editorial text-4xl">See the complete loop with real sample data.</h2><p className="mx-auto mt-4 max-w-xl text-[14px] leading-7 text-[#aaa294]">Explore a seeded pricing decision, linked research, ranked actions, a due forecast, and a change report. Nothing is written to a shared account.</p><Link href="/demo" className="mt-7 inline-flex items-center gap-2 rounded-[14px] bg-[#f0e8d8] px-5 py-3.5 text-[14px] font-bold text-[#171713]">Launch guided demo <ArrowRight className="h-4 w-4" /></Link></section>
+      <footer className="border-t border-white/8 px-5 py-6 text-center text-[12px] text-[#706b62]">Auxiliaire · Decision memory for product builders · Private workspaces use Firebase and Groq as disclosed in Settings. · © 2026 Udbhav Varma.</footer>
     </main>
   );
 }

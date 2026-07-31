@@ -1,33 +1,34 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono, Playfair_Display } from "next/font/google";
 import AppShell from "@/components/layout/AppShell";
 import { AuthProvider } from "@/context/AuthContext";
+import { DemoModeProvider } from "@/context/DemoModeContext";
 import { ViewModeProvider } from "@/context/ViewModeContext";
 import { RecordingProvider } from "@/context/RecordingContext";
 import { WorkspaceProvider } from "@/context/WorkspaceContext";
 import { FeedbackProvider } from "@/context/FeedbackContext";
 import "./globals.css";
 
-const primaryFont = Plus_Jakarta_Sans({
-  variable: "--font-primary",
-  subsets: ["latin"],
-});
-
-const monoFont = JetBrains_Mono({
-  variable: "--font-secondary",
-  subsets: ["latin"],
-});
-
-const editorialFont = Playfair_Display({
-  variable: "--font-editorial-src",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-});
-
 export const metadata: Metadata = {
-  title: "Auxiliaire",
-  description: "Personal auxiliary intelligence for daily readiness.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://auxiliaire-os.vercel.app"),
+  title: {
+    default: "Auxiliaire — Decision memory for product builders",
+    template: "%s · Auxiliaire",
+  },
+  description: "Capture the evidence behind decisions, keep every follow-up connected, and return later to see what changed.",
+  keywords: ["decision log", "product management", "AI memory", "productivity", "knowledge management"],
+  authors: [{ name: "Auxiliaire" }],
+  creator: "Auxiliaire",
+  openGraph: {
+    title: "Auxiliaire — Decision memory for product builders",
+    description: "From messy evidence to a source-linked next step—and back to the outcome.",
+    type: "website",
+    siteName: "Auxiliaire",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Auxiliaire — Decision memory for product builders",
+    description: "Capture decisions, preserve their evidence, and learn from what happened next.",
+  },
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
@@ -50,20 +51,22 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${primaryFont.variable} ${monoFont.variable} ${editorialFont.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col font-sans">
-        <AuthProvider>
-          <ViewModeProvider>
-            <FeedbackProvider>
-              <WorkspaceProvider>
-                <RecordingProvider>
-                  <AppShell>{children}</AppShell>
-                </RecordingProvider>
-              </WorkspaceProvider>
-            </FeedbackProvider>
-          </ViewModeProvider>
-        </AuthProvider>
+        <DemoModeProvider>
+          <AuthProvider>
+            <ViewModeProvider>
+              <FeedbackProvider>
+                <WorkspaceProvider>
+                  <RecordingProvider>
+                    <AppShell>{children}</AppShell>
+                  </RecordingProvider>
+                </WorkspaceProvider>
+              </FeedbackProvider>
+            </ViewModeProvider>
+          </AuthProvider>
+        </DemoModeProvider>
       </body>
     </html>
   );

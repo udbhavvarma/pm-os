@@ -11,7 +11,7 @@ import PageTransition from "./PageTransition";
 
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/";
+  const isPublicPage = pathname === "/" || pathname === "/demo";
   const mainRef = useRef<HTMLDivElement>(null);
   const { setViewMode, canUseDesktop } = useViewMode();
 
@@ -21,9 +21,9 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
     }
   }, [pathname]);
 
-  if (isLoginPage) {
+  if (isPublicPage) {
     return (
-      <div className="relative flex min-h-[100dvh] w-full flex-col items-center justify-center overflow-hidden bg-[#171713] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
+      <div className="relative min-h-[100dvh] w-full bg-[#171713] pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
         <AppLifecycle />
         {children}
       </div>
@@ -38,7 +38,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       <div className="relative z-10 flex h-full w-full flex-col overflow-hidden bg-[#fbf7ef] transition-all md:h-[90vh] md:max-h-[840px] md:w-[400px] md:rounded-[40px] md:border-[8px] md:border-[#252319] md:shadow-2xl md:shadow-black/50">
 
         {/* Simulated status bar — desktop preview only */}
-        <div className="hidden select-none items-center justify-between border-b border-[#e8dfd2] bg-[#f9f4eb] px-6 py-1.5 text-[10px] font-semibold tracking-widest text-[#6a6255] md:flex">
+        <div className="hidden select-none items-center justify-between border-b border-[#e8dfd2] bg-[#f9f4eb] px-6 py-1.5 text-[12px] font-semibold tracking-widest text-[#6a6255] md:flex">
           <span>9:41</span>
           {canUseDesktop && <button type="button" onClick={() => setViewMode("desktop")} className="flex items-center gap-1.5 rounded-md px-2 py-1 tracking-normal text-[#5c5649] transition-colors hover:bg-[#e8e0d3] hover:text-[#23231f]" title="Switch to desktop view"><Monitor className="h-3 w-3" /> Desktop</button>}
         </div>

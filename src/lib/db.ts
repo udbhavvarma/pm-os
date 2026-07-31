@@ -7,6 +7,7 @@ export interface UserData {
   email: string;
   avatar: string;
   onboarded?: boolean;
+  intent?: "decisions" | "followups" | "research";
 }
 
 export async function getUserData(uid: string): Promise<UserData | null> {
@@ -55,30 +56,34 @@ export interface CaptureRecord {
   createdAt: number;
 }
 
-const STORAGE_CIPHER_KEY = "auxiliaire_secure_vault_key_2026";
+const LEGACY_CACHE_KEY = "auxiliaire_secure_vault_key_2026";
 
-function encryptData(text: string): string {
-  const cipher = text.split("").map((character, index) => String.fromCharCode(character.charCodeAt(0) ^ STORAGE_CIPHER_KEY.charCodeAt(index % STORAGE_CIPHER_KEY.length))).join("");
-  return btoa(unescape(encodeURIComponent(cipher)));
-}
-
-function decryptData(ciphertext: string): string {
+function decodeLegacyCache(ciphertext: string): string {
   try {
     const raw = decodeURIComponent(escape(atob(ciphertext)));
-    return raw.split("").map((character, index) => String.fromCharCode(character.charCodeAt(0) ^ STORAGE_CIPHER_KEY.charCodeAt(index % STORAGE_CIPHER_KEY.length))).join("");
+    return raw.split("").map((character, index) => String.fromCharCode(character.charCodeAt(0) ^ LEGACY_CACHE_KEY.charCodeAt(index % LEGACY_CACHE_KEY.length))).join("");
   } catch { return ciphertext; }
 }
 
-export function secureSave<T>(key: string, data: T) {
+/** Browser cache only. It is intentionally not described as encrypted storage. */
+export function writeLocalCache<T>(key: string, data: T) {
   if (typeof window === "undefined") return;
-  try { localStorage.setItem(key, encryptData(JSON.stringify(data))); }
+  try { localStorage.setItem(key, JSON.stringify({ version: 2, data })); }
   catch (error) { console.error("Failed to save local data:", error); }
 }
 
-export function secureGet<T = unknown>(key: string): T | null {
+export function readLocalCache<T = unknown>(key: string): T | null {
   if (typeof window === "undefined") return null;
   try {
-    const encrypted = localStorage.getItem(key);
-    return encrypted ? JSON.parse(decryptData(encrypted)) as T : null;
-  } catch { return null; }
+    const stored = localStorage.getItem(key);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored) as { version?: number; data?: T } | T;
+    if (parsed && typeof parsed === "object" && "version" in parsed && parsed.version === 2) return parsed.data ?? null;
+    return parsed as T;
+  } catch {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(decodeLegacyCache(stored)) as T : null;
+    } catch { return null; }
+  }
 }

@@ -8,6 +8,8 @@ export interface ProcessedCapture {
   actions: SuggestedAction[];
   themes: string[];
   decisions: string[];
+  confidence: number;
+  uncertainties: string[];
 }
 
 export interface IntelligenceProvider {
@@ -16,6 +18,13 @@ export interface IntelligenceProvider {
   answer(input: { question: string; context: string[] }): Promise<string>;
   transcribe(audio: File): Promise<string>;
   research(input: { query: string; context?: string }): Promise<{ answer: string; sources: WebSource[] }>;
+}
+
+export function normalizeConfidence(value: unknown) {
+  const confidence = Number(value);
+  if (!Number.isFinite(confidence)) return 70;
+  const percentage = confidence > 0 && confidence <= 1 ? confidence * 100 : confidence;
+  return Math.round(Math.max(0, Math.min(100, percentage)));
 }
 
 export class GroqProvider implements IntelligenceProvider {
@@ -39,8 +48,8 @@ export class GroqProvider implements IntelligenceProvider {
         {
           role: "system",
           content: `You are Auxiliaire, a calm personal operating-system assistant. Structure the user's saved capture without inventing facts. Return JSON only with exactly this shape:
-{"title":string,"summary":string,"suggestedType":"note"|"knowledge"|"decision"|"watchlist","actions":[{"title":string,"dueAt"?:number}],"themes":string[],"decisions":string[]}
-Keep the title short, summary concise, and actions concrete. Only include dueAt when the capture states a clear date, as Unix milliseconds.`,
+{"title":string,"summary":string,"suggestedType":"note"|"knowledge"|"decision"|"watchlist","actions":[{"title":string,"dueAt"?:number}],"themes":string[],"decisions":string[],"confidence":number,"uncertainties":string[]}
+Use decision only for an explicit choice, commitment, hypothesis, or tradeoff that the user is recording. A future follow-up instruction without a recorded choice is a note with an action. Keep the title short, summary concise, and actions concrete. Extract 1 to 3 concise domain or product themes whenever the capture names a topic; use an empty themes array only when there is genuinely no topic. Express confidence as an integer percentage from 0 to 100. Only include dueAt when the capture states a clear date, as Unix milliseconds.`,
         },
         { role: "user", content: input },
       ],
@@ -55,6 +64,8 @@ Keep the title short, summary concise, and actions concrete. Only include dueAt 
       actions: Array.isArray(parsed.actions) ? parsed.actions.filter((action) => action?.title?.trim()).map((action) => ({ title: action.title.trim(), dueAt: action.dueAt })) : [],
       themes: Array.isArray(parsed.themes) ? parsed.themes.filter(Boolean).slice(0, 8) : [],
       decisions: Array.isArray(parsed.decisions) ? parsed.decisions.filter(Boolean).slice(0, 8) : [],
+      confidence: normalizeConfidence(parsed.confidence),
+      uncertainties: Array.isArray(parsed.uncertainties) ? parsed.uncertainties.filter(Boolean).slice(0, 5) : [],
     };
   }
 

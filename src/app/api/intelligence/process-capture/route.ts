@@ -8,6 +8,7 @@ export const OPTIONS = corsPreflight;
 async function postHandler(request: Request) {
   const { input } = await request.json() as { input?: string };
   if (!input?.trim()) return NextResponse.json({ error: "Input is required." }, { status: 400 });
+  if (input.length > 20_000) return NextResponse.json({ error: "Capture text must be shorter than 20,000 characters." }, { status: 413 });
   const provider = new IntelligenceService().provider();
   if (!await provider.isAvailable()) return NextResponse.json({ error: "Auxiliaire intelligence is currently unavailable. The capture remains saved." }, { status: 503 });
   try {

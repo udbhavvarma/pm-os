@@ -189,7 +189,7 @@ export default function RecordingDock() {
             {ui.icon}
           </span>
           <div className="min-w-0">
-            <p className={cn("flex items-center gap-1.5 text-[11px] font-semibold leading-none", ui.eyebrowClass)}>
+            <p className={cn("flex items-center gap-1.5 text-[12px] font-semibold leading-none", ui.eyebrowClass)}>
               {ui.eyebrow}
             </p>
             <p className={cn("mt-1 truncate text-sm font-semibold leading-none text-[#23231f]", ui.subMono && "font-mono")}>

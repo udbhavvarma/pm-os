@@ -5,6 +5,8 @@ description: Personal auxiliary intelligence product brief
 
 # Product: Auxiliaire
 
+> Current wedge: **decision memory for product managers and builders.** The primary loop is `CAPTURE → CONFIRM → ACT → LEARN`. Broader personal-productivity ideas below are directional context, not equal-priority scope.
+
 Auxiliaire is a personal auxiliary intelligence for daily readiness: focus, capture, knowledge, review, and keeping up with what matters. It is built for one primary user: a person who wants a calm daily system for turning scattered inputs into useful action.
 
 The name should carry the product idea. Auxiliaire is the supporting presence beside the user: not the main self, not a loud coach, not a generic bot, but the auxiliary layer that helps hold memory, notice signals, organize thoughts, and prepare the next step.

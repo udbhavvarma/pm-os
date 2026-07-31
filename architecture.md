@@ -1,161 +1,67 @@
-# Architecture Overview — Auxiliaire (PM OS)
+# Auxiliaire architecture
 
-Auxiliaire is a private auxiliary intelligence application built for daily readiness, capture, knowledge management, daily reviews, watchlists, and AI-assisted insights.
-
----
-
-## 🏗️ High-Level System Architecture
+## Runtime modes
 
 ```mermaid
-graph TD
-    Client[Client Browser / Mobile PWA] -->|React 19 / App Shell| ContextLayer[React Context Layer]
-    ContextLayer --> AuthCtx[AuthProvider]
-    ContextLayer --> AssistCtx[AssistantProvider]
-    ContextLayer --> RecCtx[RecordingProvider]
-    ContextLayer --> ViewCtx[ViewModeProvider]
-
-    AuthCtx -->|Firebase SDK| FirebaseAuth[Firebase Auth / Google Sign-In]
-    AuthCtx -->|Firestore SDK| Firestore[Cloud Firestore DB]
-
-    AssistCtx -->|HTTP Requests| NextAPI[Next.js 16 API Routes /src/app/api]
-    RecCtx -->|Audio Stream| NextAPI
-
-    NextAPI -->|serverAuth.ts| AdminAuth[Firebase Admin SDK]
-    NextAPI -->|groq.ts| GroqAPI[Groq AI Cloud / OpenAI API Format]
-    NextAPI -->|serverMonitoring.ts| GA4[GA4 Measurement Protocol]
+flowchart LR
+  Landing[Public landing] --> Demo[Guided demo]
+  Landing --> Auth[Google sign-in]
+  Demo --> DemoData[Seeded browser-local workspace]
+  Auth --> Private[Private workspace]
+  Private --> Cache[Browser cache and IndexedDB audio]
+  Private --> Firestore[Owner-scoped Firestore]
+  Private --> API[Authenticated Next.js route handlers]
+  API --> Groq[Groq processing, transcription, research]
 ```
 
----
+The demo and private workspace intentionally share the same React surfaces. Demo mode injects seeded `WorkspaceData`, blocks remote writes, and returns deterministic local intelligence responses. This makes the reviewer experience representative without requiring credentials or paid API calls.
 
-## 🛠️ Technology Stack
+## Client state
 
-| Layer | Technology |
-| :--- | :--- |
-| **Framework** | Next.js 16 (App Router with Turbopack) |
-| **Runtime & Language** | Node.js (>=22), TypeScript, React 19 |
-| **Styling** | Tailwind CSS v4, Vanilla CSS Custom Properties |
-| **Fonts** | Plus Jakarta Sans (Primary), JetBrains Mono (Code/Secondary), Playfair Display (Editorial) |
-| **Database & Auth** | Firebase Auth (Google OAuth / Email), Cloud Firestore (Offline Persistence) |
-| **AI Infrastructure** | Groq AI Cloud (`llama-3.3-70b-versatile`, `whisper-large-v3-turbo`) |
-| **Icons & Motion** | Lucide React, Framer Motion |
+- `AuthContext` manages Firebase authentication and user profile state.
+- `DemoModeContext` isolates the current tab as a guided sample session.
+- `WorkspaceContext` owns captures, items, actions, daily state, recovery, import/export, and Firestore synchronization.
+- `RecordingContext` saves audio to IndexedDB before any transcription request.
+- `FeedbackContext` centralizes reversible confirmations and failure messages.
+- `ViewModeContext` selects responsive mobile or desktop chrome.
 
----
-
-## 📁 Directory & Module Structure
-
-```text
-pm-os/
-├── src/
-│   ├── app/                    # Next.js App Router (Pages & API routes)
-│   │   ├── api/                # Backend API Endpoints
-│   │   │   ├── brief/          # Readiness daily briefing generation
-│   │   │   ├── capture-summary/# Auto-summarization & tagging for voice/text notes
-│   │   │   ├── chat/           # Conversational AI assistant endpoint
-│   │   │   ├── chat-title/     # Auto-generating chat session titles
-│   │   │   ├── onboard/        # AI onboarding helper
-│   │   │   └── transcribe/     # Groq Whisper Speech-to-Text handler
-│   │   ├── auxiliaire/         # Auxiliaire core dashboard page
-│   │   ├── capture/            # Note & voice capture page
-│   │   ├── dashboard/          # Today readiness dashboard
-│   │   ├── knowledge/          # Knowledge base page
-│   │   ├── onboarding/         # User onboarding page
-│   │   ├── patterns/           # AI pattern analysis page
-│   │   ├── review/             # Daily review page
-│   │   ├── settings/           # User settings page
-│   │   ├── watchlist/          # Item watchlist page
-│   │   ├── globals.css         # Design system tokens & global styling
-│   │   └── layout.tsx          # Root layout with providers & font configuration
-│   ├── components/             # React UI Component Hierarchy
-│   │   ├── layout/             # App Shell, Navigation, Mobile & Desktop Layouts
-│   │   ├── recording/          # Recording Dock & Voice UI Controls
-│   │   └── ui/                 # Reusable UI primitives (Buttons, Cards, Modals)
-│   ├── context/                # Global React Context State
-│   │   ├── AssistantContext.tsx# AI Assistant chat state & message history
-│   │   ├── AuthContext.tsx     # Authentication, RBAC, User profile state
-│   │   ├── RecordingContext.tsx# Audio recording state & media recorder engine
-│   │   └── ViewModeContext.tsx # Mobile/Desktop view mode toggle state
-│   └── lib/                    # Core Libraries & Utilities
-│       ├── api.ts              # Client API helper utilities
-│       ├── db.ts               # Firestore CRUD operations & queries
-│       ├── firebase.ts         # Firebase client initialization & offline cache
-│       ├── groq.ts             # Groq AI SDK client configuration
-│       ├── monitoring.ts       # Client analytics logger
-│       ├── readinessData.ts    # Readiness data modeling & compute
-│       ├── serverAuth.ts       # Server-side Firebase ID Token verification
-│       ├── serverMonitoring.ts # Server-side GA4 Measurement Protocol logger
-│       └── utils.ts            # Utility functions (cn, formatters)
-├── .env.example                # Environment variable reference template
-├── .env.local                  # Local development environment secrets
-├── .env.prod                   # Production environment configuration reference
-├── next.config.ts              # Next.js build & standalone export config
-└── README.md                   # Project summary & getting started guide
-```
-
----
-
-## 🔒 Authentication & Authorization Architecture
-
-### 1. Client-Side Authentication (`src/context/AuthContext.tsx` & `src/lib/firebase.ts`)
-- Utilizes **Firebase Authentication** supporting Google Sign-In (`GoogleAuthProvider`) and Email/Password for reviewer access.
-- Restricts login by email domain if `NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN` is specified.
-- Role-Based Access Control (RBAC):
-  - **Super Admin**: Set via `NEXT_PUBLIC_SUPER_ADMIN_EMAIL` or `isAdmin: true` flag in Firestore user document.
-  - **Admin**: Evaluated via `getAdminAccess(email)` from Firestore `admin_access` collection.
-
-### 2. Server-Side Route Protection (`src/lib/serverAuth.ts`)
-- All protected API routes wrap handlers with `withAuth()`.
-- Validates the `Authorization: Bearer <ID_TOKEN>` header against **Firebase Admin SDK** (`verifyIdToken`).
-- Development Bypass: Allows offline development when `DISABLE_API_AUTH=true` is configured in non-production environments.
-
----
-
-## 🤖 AI & Processing Pipeline
+## Evidence chain
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant App as App Shell / Voice Dock
-    participant API as API Route (/api/*)
-    participant Auth as serverAuth.ts
-    participant Groq as Groq AI (Whisper / Llama)
-
-    User->>App: Speaks voice note or submits prompt
-    App->>API: HTTP POST with Bearer ID Token
-    API->>Auth: verifyRequest(req)
-    Auth-->>API: Authed User Payload
-    API->>Groq: Transcribe / Chat Completion Request
-    Groq-->>API: Response payload / Audio Transcription
-    API-->>App: JSON / Stream Response
-    App->>User: Renders AI insight / Note Summary
+flowchart TD
+  Capture[Raw capture] --> Proposal[AI proposal]
+  Proposal -->|user confirms| Item[Memory item or decision]
+  Proposal -->|user confirms| Action[Source-linked action]
+  Item --> Action
+  Action --> Outcome[Completion or cancellation outcome]
+  Item --> Calibration[Forecast and later calibration]
+  Outcome --> Review[Review and change report]
+  Calibration --> Review
 ```
 
-### Groq Models & Services (`src/lib/groq.ts`)
-- **Chat & Synthesis**: `GROQ_CHAT_MODEL` (`llama-3.3-70b-versatile`).
-- **Speech-to-Text**: `GROQ_STT_MODEL` (`whisper-large-v3-turbo`).
+The raw capture is never overwritten by generated structure. Actions retain `sourceCaptureId` or `sourceItemId`, allowing Today and Review to recover the evidence.
 
----
+## Data boundaries
 
-## 💾 Data Flow & Persistence
+| Boundary | Contents | Behavior |
+|---|---|---|
+| Browser cache | Workspace JSON | Fast cache; not claimed as encrypted |
+| IndexedDB | Audio blobs | Saved before transcription; included in v2 exports |
+| Firestore | User profile and workspace collections | Owner-only rules under `users/{uid}` |
+| Next.js APIs | Bounded request context | Firebase token verification, per-user route rate limits |
+| Groq | User-initiated selected content | Processing, guidance, transcription, web research |
 
-- **Local First & Offline Support**: Firebase Firestore is configured with `persistentLocalCache` and `persistentMultipleTabManager` in `src/lib/firebase.ts` for immediate UI rendering and offline synchronization.
-- **Firestore Collections**:
-  - `users/{uid}`: User profile data, settings, and last activity timestamps.
-  - `users/{uid}/events`: User activity logs.
-  - `admin_access`: System administration control mappings.
+## API protections
 
----
+- Firebase ID tokens are verified server-side with Admin Auth and an Identity Toolkit fallback.
+- Email/domain allowlists are enforced on client sign-in and API authorization.
+- Request sizes and context lengths are bounded.
+- AI routes are rate-limited per user and route.
+- Provider errors return stable, user-safe messages and preserve original workspace data.
 
-## 📊 Monitoring & Telemetry
+## Verification strategy
 
-- **Client Analytics**: Handled by `src/lib/monitoring.ts` via Firebase Analytics (`logEvent`).
-- **Server Analytics**: Handled by `src/lib/serverMonitoring.ts`. Transmits server-side 5xx errors directly to Google Analytics 4 via the Measurement Protocol API using `GA4_API_SECRET`.
-
----
-
-## 🚀 Environment Configuration
-
-Configuration is managed across three main environment files:
-- **`.env.local`**: Local development secrets (ignored by Git).
-- **`.env.example`**: Checked-in reference template for environment setup.
-- **`.env.prod`**: Production configuration blueprint.
+- Unit tests cover ranking, deferred work, readiness, memory search, demo referential integrity, deterministic demo intelligence, and rate limiting.
+- TypeScript, ESLint, tests, and production build run in CI.
+- `evals/` contains paid, non-deterministic model regression fixtures.
+- Browser verification covers the public landing, demo activation, capture-to-AI proposal, action lifecycle, responsive navigation, and review disclosure.

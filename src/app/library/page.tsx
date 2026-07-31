@@ -21,7 +21,7 @@ const filters: { label: string; value: "all" | ItemType }[] = [
 ];
 
 export default function LibraryPage() {
-  const { items, captures, actions, dailyStates, activities, loaded, updateItem, addAction, addItem } = useWorkspace();
+  const { items, captures, actions, dailyStates, activities, loaded, updateItem, addAction } = useWorkspace();
   const { notify } = useFeedback();
   const initialQuery = typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("q") ?? "";
   const [filter, setFilter] = usePersistentState<"all" | ItemType>("library-filter", "all");
@@ -29,7 +29,6 @@ export default function LibraryPage() {
   const [selected, setSelected] = useState<Item | null>(null);
   const [assistantResult, setAssistantResult] = useState("");
   const [processing, setProcessing] = useState(false);
-  const [researchQuery, setResearchQuery] = usePersistentState("library-research-draft", "");
   const [researching, setResearching] = useState(false);
   const [researchError, setResearchError] = useState("");
   const [memoryQuestion, setMemoryQuestion] = usePersistentState("library-memory-question", "");
@@ -140,30 +139,6 @@ export default function LibraryPage() {
     } finally { setAskingMemory(false); }
   };
 
-  const researchNewTopic = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const topic = researchQuery.trim();
-    if (!topic) return;
-    setResearching(true);
-    setResearchError("");
-    try {
-      const result = await research({ query: topic });
-      const item = await addItem({
-        type: "knowledge",
-        title: topic,
-        content: result.answer,
-        summary: result.answer.replace(/[#*_`\[\]()]/g, "").slice(0, 240),
-        tags: ["web-research"],
-        webResearch: { query: topic, answer: result.answer, sources: result.sources, researchedAt: Date.now() },
-      });
-      setResearchQuery("");
-      setSelected(item);
-      notify("Research saved to your Library with its sources.");
-    } catch (error) {
-      setResearchError(error instanceof Error ? error.message : "Web research is unavailable.");
-    } finally { setResearching(false); }
-  };
-
   const enrichSelectedFromWeb = async () => {
     if (!selected) return;
     setResearching(true);
@@ -196,18 +171,12 @@ export default function LibraryPage() {
   return (
     <main className="min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
       <div className="mx-auto max-w-6xl">
-        <header><p className="section-label">Your durable memory</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Library</h1><p className="mt-2 text-sm text-[#5c5649]">Keep what you know, then deliberately deepen it with current information from the web.</p></header>
+        <header><p className="section-label">Your durable memory</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Memory</h1><p className="mt-2 text-sm text-[#5c5649]">Preserve the evidence behind decisions. Research and transformation appear when you open an item.</p></header>
 
         <form onSubmit={askMemory} className="mt-6 rounded-[20px] border border-[#d5ddcf] bg-[#eef0e8] p-4 @sm:p-5">
-          <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#71836a] text-white"><BookOpen className="h-4 w-4" /></span><div><p className="text-xs font-semibold text-[#3d4b39]">Ask your entire memory</p><p className="mt-1 text-[11px] leading-5 text-[#657161]">Auxiliaire answers from your captures, knowledge, decisions, research, and actions—and shows the saved sources it used.</p></div></div>
+          <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#71836a] text-white"><BookOpen className="h-4 w-4" /></span><div><p className="text-xs font-semibold text-[#3d4b39]">Ask your entire memory</p><p className="mt-1 text-[12px] leading-5 text-[#657161]">Auxiliaire answers from your captures, knowledge, decisions, research, and actions—and shows the saved sources it used.</p></div></div>
           <div className="mt-4 flex gap-2"><input value={memoryQuestion} onChange={(event) => setMemoryQuestion(event.target.value)} placeholder="What have I saved about…?" className="min-w-0 flex-1 rounded-xl border border-[#cbd5c4] bg-[#fbf7ef] px-3 py-2.5 text-xs outline-none" /><button type="submit" disabled={!memoryQuestion.trim() || askingMemory} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#71836a] px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50">{askingMemory ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />} Ask</button></div>
-          {memoryAnswer && <div className="mt-4 rounded-xl bg-[#fbf7ef] p-4"><div className="text-xs leading-5 text-[#354032]"><ReactMarkdown components={markdownComponents}>{memoryAnswer}</ReactMarkdown></div>{memorySources.length > 0 && <div className="mt-3 border-t border-[#e4ddcf] pt-3"><p className="text-[9px] font-bold uppercase tracking-wider text-[#657161]">From your memory</p><div className="mt-2 flex flex-wrap gap-2">{memorySources.map((source) => source.kind === "item" ? <button key={source.id} type="button" onClick={() => setSelected(items.find((item) => item.id === source.id) ?? null)} className="rounded-lg bg-[#eef0e8] px-2.5 py-2 text-[10px] font-semibold text-[#4d5e48]">{source.title}</button> : <Link key={source.id} href={source.kind === "capture" ? "/inbox" : "/today"} className="rounded-lg bg-[#eef0e8] px-2.5 py-2 text-[10px] font-semibold text-[#4d5e48]">{source.title}</Link>)}</div></div>}</div>}
-        </form>
-
-        <form onSubmit={researchNewTopic} className="mt-4 rounded-[20px] bg-[#171713] p-4 text-[#fbf7ef] @sm:p-5">
-          <div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#fbf7ef]/8"><Globe2 className="h-4 w-4 text-[#8daa82]" /></span><div><p className="text-xs font-semibold">Research into your Library</p><p className="mt-1 text-[11px] leading-5 text-[#aaa294]">Auxiliaire searches the live web, synthesizes what matters, and keeps the source trail.</p></div></div>
-          <div className="mt-4 flex gap-2"><input value={researchQuery} onChange={(event) => setResearchQuery(event.target.value)} placeholder="What do you want to understand or keep current?" className="min-w-0 flex-1 rounded-xl border border-[#fbf7ef]/12 bg-[#fbf7ef]/7 px-3 py-2.5 text-xs text-white outline-none placeholder:text-[#7f786d] focus:border-[#8daa82]/50" /><button type="submit" disabled={!researchQuery.trim() || researching} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#fbf7ef] px-4 py-2.5 text-xs font-semibold text-[#171713] disabled:opacity-50">{researching && !selected ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />} Research</button></div>
-          {researchError && !selected && <p className="mt-3 rounded-lg bg-[#b47a72]/15 px-3 py-2 text-xs text-[#efc1bb]">{researchError}</p>}
+          {memoryAnswer && <div className="mt-4 rounded-xl bg-[#fbf7ef] p-4"><div className="text-xs leading-5 text-[#354032]"><ReactMarkdown components={markdownComponents}>{memoryAnswer}</ReactMarkdown></div>{memorySources.length > 0 && <div className="mt-3 border-t border-[#e4ddcf] pt-3"><p className="text-[12px] font-bold uppercase tracking-wider text-[#657161]">From your memory</p><div className="mt-2 flex flex-wrap gap-2">{memorySources.map((source) => source.kind === "item" ? <button key={source.id} type="button" onClick={() => setSelected(items.find((item) => item.id === source.id) ?? null)} className="rounded-lg bg-[#eef0e8] px-2.5 py-2 text-[12px] font-semibold text-[#4d5e48]">{source.title}</button> : <Link key={source.id} href={source.kind === "capture" ? "/inbox" : "/today"} className="rounded-lg bg-[#eef0e8] px-2.5 py-2 text-[12px] font-semibold text-[#4d5e48]">{source.title}</Link>)}</div></div>}</div>}
         </form>
 
         <div className="mt-6 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -221,10 +190,10 @@ export default function LibraryPage() {
         <div className="mt-5 grid gap-3 @md:grid-cols-2 @3xl:grid-cols-3">
           {visible.length ? visible.map((item) => (
             <button key={item.id} type="button" onClick={() => { setSelected(item); setAssistantResult(""); }} className="rounded-[18px] border border-[#ded6c8] bg-[#fbf7ef] p-5 text-left transition-transform hover:-translate-y-0.5">
-              <div className="flex items-center justify-between gap-3"><span className="rounded-md bg-[#eef0e8] px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[#5b6b56]">{item.type}</span><span className="flex items-center gap-2">{item.type === "capsule" && <PackageOpen className="h-4 w-4 text-[#b9824f]" />}{item.webResearch && <Globe2 className="h-4 w-4 text-[#71836a]" />}{item.reviewAt && <CalendarClock className="h-4 w-4 text-[#8a8278]" />}</span></div>
+              <div className="flex items-center justify-between gap-3"><span className="rounded-md bg-[#eef0e8] px-2 py-1 text-[12px] font-bold uppercase tracking-wider text-[#5b6b56]">{item.type}</span><span className="flex items-center gap-2">{item.type === "capsule" && <PackageOpen className="h-4 w-4 text-[#b9824f]" />}{item.webResearch && <Globe2 className="h-4 w-4 text-[#71836a]" />}{item.reviewAt && <CalendarClock className="h-4 w-4 text-[#8a8278]" />}</span></div>
               <h2 className="mt-4 font-editorial text-lg">{item.title}</h2>
               <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#5c5649]">{item.summary || item.content}</p>
-              {item.tags.length > 0 && <p className="mt-4 text-[10px] font-semibold text-[#71836a]">{item.tags.map((tag) => `#${tag}`).join(" ")}</p>}
+              {item.tags.length > 0 && <p className="mt-4 text-[12px] font-semibold text-[#71836a]">{item.tags.map((tag) => `#${tag}`).join(" ")}</p>}
             </button>
           )) : <div className="col-span-full rounded-[18px] border border-dashed border-[#cfc6b8] p-10 text-center text-sm text-[#686255]">Nothing matches this view. Process a capture into knowledge to begin.</div>}
         </div>
@@ -236,31 +205,31 @@ export default function LibraryPage() {
           <motion.aside initial={{ x: 24, opacity: 0.6 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 20, opacity: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="h-full w-full max-w-md overflow-y-auto bg-[#fbf7ef] p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between"><p className="section-label">{selected.type}</p><button type="button" onClick={() => setSelected(null)} aria-label="Close"><X className="h-5 w-5" /></button></div>
             <input value={selected.title} onChange={(event) => setSelected({ ...selected, title: event.target.value })} onBlur={() => updateItem(selected.id, { title: selected.title })} className="mt-5 w-full bg-transparent font-editorial text-2xl outline-none" />
-            {selected.type === "capsule" && <div className="mt-4 rounded-[16px] border border-[#d8c9b3] bg-[#e9dfcf] p-4"><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#8a663e]"><PackageOpen className="h-4 w-4" /> Future-context delivery</p><p className="mt-2 text-xs font-semibold text-[#4a4740]">{selected.capsuleDeliverAt ? new Date(selected.capsuleDeliverAt).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" }) : "Delivery date not set"}</p><p className="mt-2 text-[10px] leading-4 text-[#686255]">{selected.capsuleDeliveredAt ? `Opened ${new Date(selected.capsuleDeliveredAt).toLocaleDateString()}` : "Auxiliaire will surface this on Today when the moment arrives."}</p></div>}
+            {selected.type === "capsule" && <div className="mt-4 rounded-[16px] border border-[#d8c9b3] bg-[#e9dfcf] p-4"><p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-[#8a663e]"><PackageOpen className="h-4 w-4" /> Future-context delivery</p><p className="mt-2 text-xs font-semibold text-[#4a4740]">{selected.capsuleDeliverAt ? new Date(selected.capsuleDeliverAt).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" }) : "Delivery date not set"}</p><p className="mt-2 text-[12px] leading-4 text-[#686255]">{selected.capsuleDeliveredAt ? `Opened ${new Date(selected.capsuleDeliveredAt).toLocaleDateString()}` : "Auxiliaire will surface this on Today when the moment arrives."}</p></div>}
             <textarea value={selected.content} onChange={(event) => setSelected({ ...selected, content: event.target.value })} onBlur={() => updateItem(selected.id, { content: selected.content })} className="mt-4 min-h-48 w-full rounded-xl border border-[#ded6c8] bg-[#f4efe6] p-4 text-sm leading-6 outline-none" />
-            {selected.type === "capsule" && (selected.capsuleSourceIds?.length ?? 0) > 0 && <div className="mt-4 rounded-xl border border-[#ded6c8] bg-[#f4efe6] p-3"><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#686255]"><Link2 className="h-3.5 w-3.5" /> Context packed inside</p><div className="mt-2 space-y-2">{selected.capsuleSourceIds?.map((id) => { const item = items.find((entry) => entry.id === id); const action = actions.find((entry) => entry.id === id); const capture = captures.find((entry) => entry.id === id); const title = item?.title || action?.title || capture?.title || capture?.rawContent.slice(0, 60) || "Saved context"; return item ? <button key={id} type="button" onClick={() => setSelected(item)} className="block text-left text-xs font-semibold text-[#52694c]">{title}</button> : <Link key={id} href={action ? "/today" : "/inbox"} className="block text-xs font-semibold text-[#52694c]">{title}</Link>; })}</div></div>}
-            {(selected.sourceCaptureId || actions.some((action) => action.sourceItemId === selected.id)) && <div className="mt-4 rounded-xl border border-[#ded6c8] bg-[#f4efe6] p-3"><p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[#686255]"><Link2 className="h-3.5 w-3.5" /> Connected context</p>{selected.sourceCaptureId && <Link href="/inbox" className="mt-2 block text-xs font-semibold text-[#52694c]">Open the source capture</Link>}{actions.filter((action) => action.sourceItemId === selected.id).map((action) => <Link key={action.id} href="/today" className="mt-2 flex items-center justify-between text-xs text-[#4a4740]"><span>{action.title}</span><span className="text-[10px] font-semibold text-[#71836a]">{action.status}</span></Link>)}</div>}
+            {selected.type === "capsule" && (selected.capsuleSourceIds?.length ?? 0) > 0 && <div className="mt-4 rounded-xl border border-[#ded6c8] bg-[#f4efe6] p-3"><p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-[#686255]"><Link2 className="h-3.5 w-3.5" /> Context packed inside</p><div className="mt-2 space-y-2">{selected.capsuleSourceIds?.map((id) => { const item = items.find((entry) => entry.id === id); const action = actions.find((entry) => entry.id === id); const capture = captures.find((entry) => entry.id === id); const title = item?.title || action?.title || capture?.title || capture?.rawContent.slice(0, 60) || "Saved context"; return item ? <button key={id} type="button" onClick={() => setSelected(item)} className="block text-left text-xs font-semibold text-[#52694c]">{title}</button> : <Link key={id} href={action ? "/today" : "/inbox"} className="block text-xs font-semibold text-[#52694c]">{title}</Link>; })}</div></div>}
+            {(selected.sourceCaptureId || actions.some((action) => action.sourceItemId === selected.id)) && <div className="mt-4 rounded-xl border border-[#ded6c8] bg-[#f4efe6] p-3"><p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-[#686255]"><Link2 className="h-3.5 w-3.5" /> Connected context</p>{selected.sourceCaptureId && <Link href="/inbox" className="mt-2 block text-xs font-semibold text-[#52694c]">Open the source capture</Link>}{actions.filter((action) => action.sourceItemId === selected.id).map((action) => <Link key={action.id} href="/today" className="mt-2 flex items-center justify-between text-xs text-[#4a4740]"><span>{action.title}</span><span className="text-[12px] font-semibold text-[#71836a]">{action.status}</span></Link>)}</div>}
             {selected.type !== "capsule" && <div className="mt-5">
               <p className="flex items-center gap-2 text-xs font-semibold"><Sparkles className="h-4 w-4 text-[#71836a]" /> Auxiliaire for this item</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {["Summarise this", "Extract actions", "Explain this", "Help me decide", "Ask about this item"].map((label) => <button key={label} type="button" disabled={processing} onClick={() => runContextAction(label)} className="rounded-xl border border-[#ded6c8] px-3 py-2.5 text-left text-xs font-semibold text-[#7a7264] disabled:opacity-40">{label}</button>)}
               </div>
-              <p className="mt-2 text-[10px] text-[#8a8278]">Your item remains saved if Auxiliaire cannot process it right now.</p>
+              <p className="mt-2 text-[12px] text-[#8a8278]">Your item remains saved if Auxiliaire cannot process it right now.</p>
               {assistantResult && <div className="mt-3 whitespace-pre-wrap rounded-xl bg-[#eef0e8] p-3 text-xs leading-5 text-[#3d4b39]">{assistantResult}</div>}
             </div>}
 
             {selected.type !== "capsule" && <div className="mt-5 rounded-[16px] border border-[#d7dfcf] bg-[#eef0e8] p-4">
-              <div className="flex items-start justify-between gap-3"><div><p className="flex items-center gap-2 text-xs font-semibold text-[#3d4b39]"><Globe2 className="h-4 w-4" /> Current web context</p><p className="mt-1 text-[10px] leading-4 text-[#657161]">Enrichment is stored separately, so the original note stays intact.</p></div><button type="button" onClick={enrichSelectedFromWeb} disabled={researching} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#71836a] px-2.5 py-2 text-[10px] font-semibold text-white disabled:opacity-50">{researching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}{selected.webResearch ? "Refresh" : "Research"}</button></div>
+              <div className="flex items-start justify-between gap-3"><div><p className="flex items-center gap-2 text-xs font-semibold text-[#3d4b39]"><Globe2 className="h-4 w-4" /> Current web context</p><p className="mt-1 text-[12px] leading-4 text-[#657161]">Enrichment is stored separately, so the original note stays intact.</p></div><button type="button" onClick={enrichSelectedFromWeb} disabled={researching} className="flex shrink-0 items-center gap-1.5 rounded-lg bg-[#71836a] px-2.5 py-2 text-[12px] font-semibold text-white disabled:opacity-50">{researching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}{selected.webResearch ? "Refresh" : "Research"}</button></div>
               {selected.webResearch ? <>
-                <p className="mt-3 text-[9px] font-semibold uppercase tracking-wider text-[#657161]">Researched {new Date(selected.webResearch.researchedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</p>
+                <p className="mt-3 text-[12px] font-semibold uppercase tracking-wider text-[#657161]">Researched {new Date(selected.webResearch.researchedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</p>
                 <div className="mt-2 text-xs leading-5 text-[#354032]"><ReactMarkdown components={markdownComponents}>{selected.webResearch.answer}</ReactMarkdown></div>
-                {selected.webResearch.sources.length > 0 && <div className="mt-3 border-t border-[#ced8c8] pt-3"><p className="text-[9px] font-bold uppercase tracking-wider text-[#657161]">Sources</p><div className="mt-2 space-y-1.5">{selected.webResearch.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="flex items-start gap-2 rounded-lg bg-[#fbf7ef]/70 px-2.5 py-2 text-[10px] font-semibold text-[#4d5e48] hover:bg-[#fbf7ef]"><ExternalLink className="mt-0.5 h-3 w-3 shrink-0" /><span>{source.title}</span></a>)}</div></div>}
+                {selected.webResearch.sources.length > 0 && <div className="mt-3 border-t border-[#ced8c8] pt-3"><p className="text-[12px] font-bold uppercase tracking-wider text-[#657161]">Sources</p><div className="mt-2 space-y-1.5">{selected.webResearch.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="flex items-start gap-2 rounded-lg bg-[#fbf7ef]/70 px-2.5 py-2 text-[12px] font-semibold text-[#4d5e48] hover:bg-[#fbf7ef]"><ExternalLink className="mt-0.5 h-3 w-3 shrink-0" /><span>{source.title}</span></a>)}</div></div>}
               </> : <p className="mt-3 text-xs leading-5 text-[#657161]">Research this item to find recent developments, corroborating sources, and useful next questions.</p>}
               {researchError && <p className="mt-3 rounded-lg bg-[#fff1ef] px-3 py-2 text-xs text-[#8d5149]">{researchError}</p>}
               <div className="mt-4 border-t border-[#ced8c8] pt-3">
                 <label className="flex items-center justify-between gap-3 text-xs font-semibold text-[#3d4b39]"><span>Keep this topic current</span><input type="checkbox" checked={Boolean(selected.keepCurrent)} onChange={async (event) => { const keepCurrent = event.target.checked; const refreshEveryDays = selected.refreshEveryDays || 30; const updates = { keepCurrent, refreshEveryDays, nextResearchAt: keepCurrent ? Date.now() + refreshEveryDays * 86400000 : undefined }; await updateItem(selected.id, updates); setSelected({ ...selected, ...updates }); }} className="h-4 w-4 accent-[#71836a]" /></label>
-                {selected.keepCurrent && <label className="mt-3 flex items-center justify-between gap-3 text-[10px] text-[#657161]"><span>Check for useful updates</span><select value={selected.refreshEveryDays || 30} onChange={async (event) => { const refreshEveryDays = Number(event.target.value); const updates = { refreshEveryDays, nextResearchAt: Date.now() + refreshEveryDays * 86400000 }; await updateItem(selected.id, updates); setSelected({ ...selected, ...updates }); }} className="rounded-lg border border-[#cbd5c4] bg-[#fbf7ef] px-2 py-1.5 font-semibold"><option value={7}>Weekly</option><option value={30}>Monthly</option><option value={90}>Quarterly</option></select></label>}
-                {(selected.webResearchHistory?.length ?? 0) > 0 && <p className="mt-3 text-[10px] text-[#657161]">{selected.webResearchHistory?.length} earlier research snapshot{selected.webResearchHistory?.length === 1 ? "" : "s"} preserved.</p>}
+                {selected.keepCurrent && <label className="mt-3 flex items-center justify-between gap-3 text-[12px] text-[#657161]"><span>Check for useful updates</span><select value={selected.refreshEveryDays || 30} onChange={async (event) => { const refreshEveryDays = Number(event.target.value); const updates = { refreshEveryDays, nextResearchAt: Date.now() + refreshEveryDays * 86400000 }; await updateItem(selected.id, updates); setSelected({ ...selected, ...updates }); }} className="rounded-lg border border-[#cbd5c4] bg-[#fbf7ef] px-2 py-1.5 font-semibold"><option value={7}>Weekly</option><option value={30}>Monthly</option><option value={90}>Quarterly</option></select></label>}
+                {(selected.webResearchHistory?.length ?? 0) > 0 && <p className="mt-3 text-[12px] text-[#657161]">{selected.webResearchHistory?.length} earlier research snapshot{selected.webResearchHistory?.length === 1 ? "" : "s"} preserved.</p>}
               </div>
             </div>}
             <div className="mt-6 flex flex-wrap gap-2 border-t border-[#eee6d8] pt-4">

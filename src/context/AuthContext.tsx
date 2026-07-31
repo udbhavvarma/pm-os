@@ -1,8 +1,10 @@
 ﻿"use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged, signOut } from "firebase/auth";
+import { User, deleteUser, onAuthStateChanged, signOut } from "firebase/auth";
+import { deleteDoc, doc } from "firebase/firestore";
 import { auth } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { loginWithGoogle } from "@/lib/auth/loginWithGoogle";
 import { UserData, getUserData, initializeUserData, updateUserData } from "@/lib/db";
 const ALLOWED_EMAIL = process.env.NEXT_PUBLIC_ALLOWED_EMAIL?.trim().toLowerCase() || "";
@@ -19,6 +21,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   userData: UserData | null;
   updateUserDataState: (data: Partial<UserData>) => Promise<void>;
 }
@@ -28,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signInWithGoogle: async () => {},
   logout: async () => {},
+  deleteAccount: async () => {},
   userData: null,
   updateUserDataState: async () => {},
 });
@@ -83,6 +87,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signOut(auth);
   };
 
+  const deleteAccount = async () => {
+    const current = auth.currentUser;
+    if (!current) return;
+    await deleteDoc(doc(db, "users", current.uid)).catch(() => {});
+    await deleteUser(current);
+    setUser(null);
+    setUserData(null);
+  };
+
   const updateUserDataState = async (updatedFields: Partial<UserData>) => {
     if (!user) return;
     setUserData((previous) => (previous ? { ...previous, ...updatedFields } : previous));
@@ -90,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, logout, userData, updateUserDataState }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, logout, deleteAccount, userData, updateUserDataState }}>
       {children}
     </AuthContext.Provider>
   );

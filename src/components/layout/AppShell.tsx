@@ -7,6 +7,7 @@ import MobileLayout from "./MobileLayout";
 import DesktopLayout from "./DesktopLayout";
 import { useViewMode } from "@/context/ViewModeContext";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 
 // Chooses between the mobile frame (default) and the desktop dashboard layout.
 // On web at desktop widths the user can switch to the dashboard view (the toggle
@@ -19,15 +20,18 @@ import { useAuth } from "@/context/AuthContext";
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { viewMode, canUseDesktop } = useViewMode();
   const { user, userData, loading } = useAuth();
+  const { isDemo, ready: demoReady } = useDemoMode();
   const pathname = usePathname();
   const router = useRouter();
-  const isLoginPage = pathname === "/";
+  const isPublicPage = pathname === "/" || pathname === "/demo";
 
   useEffect(() => {
     if (!loading && user && userData && !userData.onboarded && pathname !== "/" && pathname !== "/onboarding") router.replace("/onboarding");
-  }, [loading, pathname, router, user, userData]);
+    const protectedPath = ["/today", "/inbox", "/library", "/review", "/settings", "/share"].some((path) => pathname === path || pathname.startsWith(`${path}/`));
+    if (demoReady && !loading && protectedPath && !user && !isDemo) router.replace("/");
+  }, [demoReady, isDemo, loading, pathname, router, user, userData]);
 
-  const showDesktop = canUseDesktop && viewMode === "desktop" && !isLoginPage && pathname !== "/onboarding";
+  const showDesktop = canUseDesktop && viewMode === "desktop" && !isPublicPage && pathname !== "/onboarding";
 
   return (
     <MotionConfig reducedMotion="user">

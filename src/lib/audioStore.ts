@@ -60,3 +60,37 @@ export async function deleteAudio(url?: string) {
   });
   database.close();
 }
+
+export interface AudioBackupRecord {
+  sourceUrl: string;
+  mimeType: string;
+  base64: string;
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+export async function exportAudioAttachments(urls: Array<string | undefined>): Promise<AudioBackupRecord[]> {
+  const records: AudioBackupRecord[] = [];
+  for (const sourceUrl of [...new Set(urls.filter((value): value is string => Boolean(value)))]) {
+    const blob = await loadAudioBlob(sourceUrl).catch(() => null);
+    if (blob) records.push({ sourceUrl, mimeType: blob.type || "audio/webm", base64: await blobToBase64(blob) });
+  }
+  return records;
+}
+
+export async function restoreAudioAttachments(records: AudioBackupRecord[]) {
+  const replacements = new Map<string, string>();
+  for (const record of records) {
+    const bytes = Uint8Array.from(atob(record.base64), (character) => character.charCodeAt(0));
+    const id = `audio_${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
+    replacements.set(record.sourceUrl, await saveAudio(id, new Blob([bytes], { type: record.mimeType || "audio/webm" })));
+  }
+  return replacements;
+}

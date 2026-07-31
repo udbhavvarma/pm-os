@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import type { Auth, DecodedIdToken } from "firebase-admin/auth";
 import { logServerError } from "@/lib/serverMonitoring";
+import { consumeRateLimit } from "@/lib/rateLimit";
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "some-great-projects";
 const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || "AIzaSyB-FfaasP-_VNgudQOge6Vza6Ou5Na7Q9A";
@@ -147,6 +148,9 @@ export function withAuth(handler: AuthedHandler) {
         return "";
       }
     })();
+
+    const rate = consumeRateLimit(`${user.uid}:${route}`, route.includes("research") || route.includes("transcribe") ? 12 : 60);
+    if (!rate.allowed) return NextResponse.json({ error: "Too many requests", message: "Auxiliaire needs a short pause before the next AI request." }, { status: 429, headers: { ...CORS_HEADERS, "Retry-After": String(rate.retryAfter) } });
 
     try {
       const response = await handler(req, user);

@@ -21,7 +21,7 @@ export default function CaptureComposer({ compact = false }: { compact?: boolean
     const inputType = /^https?:\/\/\S+$/i.test(rawContent) ? "link" : "text";
     await addCapture({ inputType, rawContent });
     setContent("");
-    notify("Captured. It is waiting in your Inbox.");
+    notify("Captured. It is ready to clarify.");
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1800);
   };

@@ -27,7 +27,7 @@ Auxiliaire makes that chain the product. AI proposes structure, but the raw inpu
 ## Core surfaces
 
 - **Today** — one recommended move, a realistic attention budget, and the complete action lifecycle.
-- **Inbox** — text, URL, voice, and PWA share-target capture with transparent AI processing status.
+- **Capture** — text, URL, voice, and PWA share-target capture with transparent AI processing status.
 - **Memory** — source-linked notes, knowledge, decisions, research history, and contextual retrieval.
 - **Review** — a simple review queue plus optional decision calibration, tension detection, change reports, and future-context capsules.
 

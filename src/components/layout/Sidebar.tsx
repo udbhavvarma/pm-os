@@ -19,7 +19,7 @@ type NavItem = { href: string; label: string; icon: React.ComponentType<{ classN
 
 const navItems: NavItem[] = [
   { href: "/today", label: "Today", icon: IconToday },
-  { href: "/inbox", label: "Inbox", icon: IconCapture },
+  { href: "/inbox", label: "Capture", icon: IconCapture },
   { href: "/library", label: "Memory", icon: IconKnowledge },
   { href: "/review", label: "Review", icon: IconReview },
 ];

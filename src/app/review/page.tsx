@@ -100,7 +100,7 @@ export default function ReviewPage() {
         `Completed in the last 7 days (${completedThisWeek.length}): ${completedThisWeek.map((action) => action.title).join("; ") || "none"}`,
         `Still open (${actions.filter((action) => action.status === "open").length}): ${actions.filter((action) => action.status === "open").slice(0, 12).map((action) => action.title).join("; ") || "none"}`,
         `Unresolved decisions (${unresolvedDecisions.length}): ${unresolvedDecisions.map((item) => item.title).join("; ") || "none"}`,
-        `Inbox captures (${captures.filter((capture) => capture.status === "inbox").length})`,
+        `Captures to clarify (${captures.filter((capture) => capture.status === "inbox").length})`,
         `Living knowledge due (${livingKnowledgeDue.length}): ${livingKnowledgeDue.map((item) => item.title).join("; ") || "none"}`,
       ];
       const response = await authedFetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: "Prepare a concise weekly reset. Use sections: Progress, Stuck or unresolved, Knowledge to refresh, and Recommended focus for next week. Do not make changes; give recommendations for the user to approve.", context }) });

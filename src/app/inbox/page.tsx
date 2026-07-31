@@ -17,7 +17,7 @@ function CaptureContentEditor({ capture, save }: { capture: Capture; save: (valu
   return <textarea value={value} onChange={(event) => setValue(event.target.value)} onBlur={() => value !== capture.rawContent && save(value)} className="mt-2 min-h-24 w-full rounded-xl border border-[#ded6c8] bg-[#f4efe6] p-3 text-xs leading-5 outline-none" />;
 }
 
-export default function InboxPage() {
+export default function CapturePage() {
   const { captures, loaded, updateCapture, deleteCapture, convertCaptureToAction, convertCaptureToItem } = useWorkspace();
   const { notify } = useFeedback();
   const [query, setQuery] = usePersistentState("inbox-query", "");
@@ -32,7 +32,7 @@ export default function InboxPage() {
     .filter((capture) => `${capture.title} ${capture.rawContent} ${capture.transcript ?? ""}`.toLowerCase().includes(query.toLowerCase()))
     .sort((left, right) => right.createdAt - left.createdAt), [captures, query, showArchived]);
 
-  if (!loaded) return <div className="flex min-h-[70vh] items-center justify-center text-sm text-[#5c5649]">Loading inbox…</div>;
+  if (!loaded) return <div className="flex min-h-[70vh] items-center justify-center text-sm text-[#5c5649]">Loading captures…</div>;
 
   const processCapture = async (capture: Capture, announce = true) => {
     setProcessingId(capture.id);
@@ -92,7 +92,7 @@ export default function InboxPage() {
     <main className="min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
       <div className="mx-auto max-w-5xl">
         <header className="flex items-start justify-between gap-4">
-          <div><p className="section-label">Capture → clarify</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Inbox</h1><p className="mt-2 text-sm text-[#5c5649]">Save first. Decide what it means afterward.</p></div>
+          <div><p className="section-label">Capture → clarify</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Capture</h1><p className="mt-2 text-sm text-[#5c5649]">Save first. Decide what it means afterward.</p></div>
           <SyncIndicator />
         </header>
 
@@ -100,7 +100,7 @@ export default function InboxPage() {
 
         <section className="mt-4 flex items-center justify-between gap-4 rounded-[16px] border border-[#d5ddcf] bg-[#eef0e8] px-4 py-3">
           <div><p className="text-[13px] font-semibold text-[#3d4b39]">Transparent AI triage</p><p className="mt-1 text-[12px] leading-5 text-[#52614d]">Runs only when you ask. Private-workspace content is sent to Groq for processing; nothing moves until you confirm it.</p></div>
-          <button type="button" onClick={triageNewCaptures} disabled={triaging || !captures.some((capture) => capture.status === "inbox" && !capture.aiSummary)} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#71836a] px-3 py-2.5 text-xs font-semibold text-white disabled:opacity-40">{triaging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Triage new</button>
+          <button type="button" onClick={triageNewCaptures} disabled={triaging || !captures.some((capture) => capture.status === "inbox" && !capture.aiSummary)} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#71836a] px-3 py-2.5 text-xs font-semibold text-white disabled:opacity-40">{triaging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Clarify new</button>
         </section>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -149,7 +149,7 @@ export default function InboxPage() {
                 )}
               </article>
             );
-          }) : <div className="rounded-[18px] border border-dashed border-[#cfc6b8] p-10 text-center text-sm text-[#686255]">Your inbox is clear.</div>}
+          }) : <div className="rounded-[18px] border border-dashed border-[#cfc6b8] p-10 text-center text-sm text-[#686255]">Nothing is waiting to be clarified.</div>}
         </div>
       </div>
     </main>

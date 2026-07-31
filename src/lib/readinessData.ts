@@ -52,7 +52,7 @@ export const knowledgeItems = [
   },
   {
     id: "capture-inbox",
-    title: "Capture inbox",
+    title: "Capture queue",
     type: "System",
     area: "Capture",
     summary: "A holding area for voice notes, links, ideas, errands, and unresolved questions.",

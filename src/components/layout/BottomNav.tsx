@@ -13,7 +13,7 @@ import NavPendingIndicator from "./NavPendingIndicator";
 
 const navItems = [
   { href: "/today", label: "Today", icon: IconToday },
-  { href: "/inbox", label: "Inbox", icon: IconCapture, isHero: true },
+  { href: "/inbox", label: "Capture", icon: IconCapture, isHero: true },
   { href: "/library", label: "Memory", icon: IconKnowledge },
   { href: "/review", label: "Review", icon: IconReview },
 ];

@@ -31,7 +31,7 @@ export default function RecordPanel({ rootClassName }: { rootClassName?: string 
           <div className="mt-4">
             <Check className="mx-auto h-5 w-5 text-[#71836a]" />
             <h3 className="mt-2 font-semibold">Recording saved</h3>
-            <p className="mt-1 text-xs text-[#5c5649]">The audio is in your inbox. Transcription is optional.</p>
+            <p className="mt-1 text-xs text-[#5c5649]">The audio is saved in Capture. Transcription is optional.</p>
             <button type="button" onClick={rec.onReset} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#5c5649]">
               <RotateCcw className="h-3.5 w-3.5" /> Record another
             </button>

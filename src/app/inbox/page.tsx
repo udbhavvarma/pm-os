@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Archive, Check, ChevronDown, Link2, Loader2, Mic, Search, Sparkles, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, Link2, Loader2, Mic, Search, Sparkles, Trash2 } from "lucide-react";
 import CaptureComposer from "@/components/capture/CaptureComposer";
 import AudioPlayer from "@/components/capture/AudioPlayer";
 import SyncIndicator from "@/components/ui/SyncIndicator";
+import { IconCapture } from "@/components/ui/Icons";
+import { EmptyStateVisual } from "@/components/ui/ProductVisuals";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import type { Capture } from "@/lib/workspace";
 import { authedFetch } from "@/lib/api";
@@ -118,7 +120,7 @@ export default function CapturePage() {
               <article key={capture.id} className="rounded-[18px] border border-[#ded6c8] bg-[#fbf7ef] p-4 @sm:p-5">
                 <button type="button" onClick={() => setSelectedId(expanded ? null : capture.id)} className="flex w-full items-start gap-3 text-left">
                   <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eef0e8] text-[#71836a]">
-                    {capture.inputType === "voice" ? <Mic className="h-4 w-4" /> : capture.inputType === "link" ? <Link2 className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                    {capture.inputType === "voice" ? <Mic className="h-4 w-4" /> : capture.inputType === "link" ? <Link2 className="h-4 w-4" /> : <IconCapture className="h-4 w-4" />}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold">{capture.title || "Untitled capture"}</span>
@@ -149,7 +151,7 @@ export default function CapturePage() {
                 )}
               </article>
             );
-          }) : <div className="rounded-[18px] border border-dashed border-[#cfc6b8] p-10 text-center text-sm text-[#686255]">Nothing is waiting to be clarified.</div>}
+          }) : <div className="rounded-[18px] border border-dashed border-[#cfc6b8] bg-[#fbf7ef]/55 p-8 text-center"><EmptyStateVisual variant="capture" /><h2 className="mt-2 font-editorial text-xl text-[#38352f]">Your capture space is clear.</h2><p className="mx-auto mt-2 max-w-sm text-[13px] leading-6 text-[#686255]">New notes, links, and voice thoughts will wait here until you are ready to clarify them.</p></div>}
         </div>
       </div>
     </main>

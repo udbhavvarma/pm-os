@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Archive, ArrowRight, BrainCircuit, CalendarRange, Check, Clock3, Loader2, Pencil, RotateCcw, Sparkles } from "lucide-react";
+import { Archive, ArrowRight, BrainCircuit, CalendarRange, Check, Clock3, Loader2, Pencil, Sparkles } from "lucide-react";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { dayId, type Action, type Capture, type Item } from "@/lib/workspace";
 import { authedFetch } from "@/lib/api";
 import { useFeedback } from "@/context/FeedbackContext";
 import ReflectionStudio from "@/components/review/ReflectionStudio";
+import { EmptyStateVisual } from "@/components/ui/ProductVisuals";
 
 type QueueEntry =
   | { kind: "capture"; record: Capture }
@@ -151,8 +152,8 @@ export default function ReviewPage() {
             </div>
           </section>
         ) : (
-          <section className="mt-5 rounded-[24px] border border-[#ded6c8] bg-[#fbf7ef] p-10 text-center">
-            <RotateCcw className="mx-auto h-7 w-7 text-[#71836a]" /><h2 className="mt-4 font-editorial text-2xl">You are current.</h2><p className="mt-2 text-sm text-[#5c5649]">Nothing useful needs your attention right now.</p>
+          <section className="mt-5 rounded-[24px] border border-[#ded6c8] bg-[#fbf7ef] p-8 text-center">
+            <EmptyStateVisual variant="review" /><h2 className="mt-2 font-editorial text-2xl">You are current.</h2><p className="mt-2 text-sm text-[#5c5649]">Nothing useful needs your attention right now.</p>
             {!reviewedToday && <button type="button" onClick={() => updateDailyState({ reviewedAt: Date.now() })} className="mt-6 rounded-xl bg-[#23231f] px-4 py-3 text-xs font-semibold text-white">Complete today’s review</button>}
             {reviewedToday && <p className="mt-5 text-xs font-semibold text-[#71836a]">Today’s review is complete.</p>}
           </section>

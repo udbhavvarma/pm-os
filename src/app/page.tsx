@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BrainCircuit, Check, CircleDot, GitCompareArrows, Link2, Loader2, LockKeyhole, Mic2, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Loader2, LockKeyhole, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { friendlySignInError } from "@/lib/userErrors";
-import { AuxiliaireMark } from "@/components/ui/Icons";
+import { AuxiliaireMark, IconCapture, IconDecision, IconReview } from "@/components/ui/Icons";
+import { DecisionLoopStrip, DecisionMemoryPreview } from "@/components/ui/ProductVisuals";
 
 const workflow = [
-  { number: "01", title: "Capture the evidence", copy: "Drop a meeting note, research link, voice thought, or unresolved question. The original is saved before AI touches it.", icon: Mic2 },
-  { number: "02", title: "Make the decision legible", copy: "Auxiliaire proposes the decision, assumptions, uncertainties, and concrete follow-ups. You approve every change.", icon: BrainCircuit },
-  { number: "03", title: "Return to the outcome", copy: "Every action keeps its source. Reviews compare what you expected with what actually happened.", icon: GitCompareArrows },
+  { number: "01", title: "Capture the evidence", copy: "Drop a meeting note, research link, voice thought, or unresolved question. The original is saved before AI touches it.", icon: IconCapture },
+  { number: "02", title: "Make the decision legible", copy: "Auxiliaire proposes the decision, assumptions, uncertainties, and concrete follow-ups. You approve every change.", icon: IconDecision },
+  { number: "03", title: "Return to the outcome", copy: "Every action keeps its source. Reviews compare what you expected with what actually happened.", icon: IconReview },
 ];
 
 export default function LandingPage() {
@@ -63,16 +64,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="relative rounded-[28px] border border-white/10 bg-[#211f19] p-3 shadow-2xl shadow-black/45">
-          <div className="rounded-[22px] bg-[#f4efe6] p-5 text-[#23231f] sm:p-6">
-            <div className="flex items-center justify-between"><div><p className="section-label">Friday, pricing review</p><h2 className="mt-2 font-editorial text-3xl">One decision needs evidence.</h2></div><span className="rounded-full bg-[#eef0e8] px-3 py-1.5 text-[12px] font-bold text-[#4d5e48]">Sample</span></div>
-            <div className="mt-5 rounded-[18px] bg-[#171713] p-5 text-[#f5eddd]"><p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8daa82]">Start here</p><p className="mt-3 font-editorial text-xl">Model annual-plan economics</p><p className="mt-2 text-[13px] leading-6 text-[#aaa294]">Recommended because it is high priority, due tomorrow, and linked to the pricing decision.</p></div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[16px] border border-[#ded6c8] bg-[#fbf7ef] p-4"><div className="flex items-center gap-2 text-[13px] font-bold"><Link2 className="h-4 w-4 text-[#71836a]" /> Connected evidence</div><p className="mt-3 text-[13px] leading-6 text-[#686255]">3 procurement stalls · activation healthy after setup · rollout risk may outweigh price.</p></div>
-              <div className="rounded-[16px] border border-[#d5ddcf] bg-[#eef0e8] p-4"><div className="flex items-center gap-2 text-[13px] font-bold text-[#3d4b39]"><CircleDot className="h-4 w-4" /> Forecast</div><p className="mt-3 text-[13px] leading-6 text-[#52614d]">2 of the next 3 accounts accept annual terms with guided rollout.</p></div>
-            </div>
-          </div>
-        </div>
+        <DecisionMemoryPreview />
       </section>
 
       <section id="how" className="border-y border-white/8 bg-[#1c1b16]">
@@ -84,7 +76,7 @@ export default function LandingPage() {
       </section>
 
       <section className="mx-auto grid max-w-6xl gap-8 px-5 py-20 md:px-8 lg:grid-cols-2">
-        <div><p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#8daa82]">Why it is different</p><h2 className="mt-4 font-editorial text-4xl leading-tight">The memory stays attached to the work.</h2><p className="mt-5 text-[15px] leading-8 text-[#aaa294]">Most tools separate notes, tasks, research, and retrospectives. Auxiliaire preserves the chain between them, so a future review can recover the evidence instead of reconstructing it from memory.</p></div>
+        <div><p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#8daa82]">Why it is different</p><h2 className="mt-4 font-editorial text-4xl leading-tight">The memory stays attached to the work.</h2><p className="mt-5 text-[15px] leading-8 text-[#aaa294]">Most tools separate notes, tasks, research, and retrospectives. Auxiliaire preserves the chain between them, so a future review can recover the evidence instead of reconstructing it from memory.</p><DecisionLoopStrip /></div>
         <div className="grid gap-3">
           {["Actions retain their source capture or decision.", "AI proposes structure; the user approves mutations.", "Forecasts are frozen before outcomes are known.", "Research updates are stored separately from original notes."].map((item) => <div key={item} className="flex gap-3 rounded-[16px] border border-white/8 bg-white/[0.035] p-4 text-[14px] leading-6 text-[#c5beb3]"><Check className="mt-1 h-4 w-4 shrink-0 text-[#8daa82]" /> {item}</div>)}
         </div>

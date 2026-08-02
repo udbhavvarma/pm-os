@@ -10,6 +10,8 @@ import { authedFetch } from "@/lib/api";
 import { searchWorkspaceMemory, type Item, type ItemType, type MemoryResult } from "@/lib/workspace";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useFeedback } from "@/context/FeedbackContext";
+import { IconBrief, IconDecision, IconDocument, IconKnowledge, IconWatchlist } from "@/components/ui/Icons";
+import { EmptyStateVisual } from "@/components/ui/ProductVisuals";
 
 const filters: { label: string; value: "all" | ItemType }[] = [
   { label: "All", value: "all" },
@@ -19,6 +21,14 @@ const filters: { label: string; value: "all" | ItemType }[] = [
   { label: "Watchlist", value: "watchlist" },
   { label: "Capsules", value: "capsule" },
 ];
+
+const itemTypeIcons: Record<ItemType, typeof IconDocument> = {
+  note: IconDocument,
+  knowledge: IconKnowledge,
+  decision: IconDecision,
+  watchlist: IconWatchlist,
+  capsule: IconBrief,
+};
 
 export default function LibraryPage() {
   const { items, captures, actions, dailyStates, activities, loaded, updateItem, addAction } = useWorkspace();
@@ -188,14 +198,16 @@ export default function LibraryPage() {
         </label>
 
         <div className="mt-5 grid gap-3 @md:grid-cols-2 @3xl:grid-cols-3">
-          {visible.length ? visible.map((item) => (
+          {visible.length ? visible.map((item) => {
+            const TypeIcon = itemTypeIcons[item.type];
+            return (
             <button key={item.id} type="button" onClick={() => { setSelected(item); setAssistantResult(""); }} className="rounded-[18px] border border-[#ded6c8] bg-[#fbf7ef] p-5 text-left transition-transform hover:-translate-y-0.5">
-              <div className="flex items-center justify-between gap-3"><span className="rounded-md bg-[#eef0e8] px-2 py-1 text-[12px] font-bold uppercase tracking-wider text-[#5b6b56]">{item.type}</span><span className="flex items-center gap-2">{item.type === "capsule" && <PackageOpen className="h-4 w-4 text-[#b9824f]" />}{item.webResearch && <Globe2 className="h-4 w-4 text-[#71836a]" />}{item.reviewAt && <CalendarClock className="h-4 w-4 text-[#8a8278]" />}</span></div>
+              <div className="flex items-center justify-between gap-3"><span className="flex items-center gap-1.5 rounded-md bg-[#eef0e8] px-2 py-1 text-[12px] font-bold uppercase tracking-wider text-[#5b6b56]"><TypeIcon className="h-3.5 w-3.5" />{item.type}</span><span className="flex items-center gap-2">{item.type === "capsule" && <PackageOpen className="h-4 w-4 text-[#b9824f]" />}{item.webResearch && <Globe2 className="h-4 w-4 text-[#71836a]" />}{item.reviewAt && <CalendarClock className="h-4 w-4 text-[#8a8278]" />}</span></div>
               <h2 className="mt-4 font-editorial text-lg">{item.title}</h2>
               <p className="mt-2 line-clamp-3 text-xs leading-5 text-[#5c5649]">{item.summary || item.content}</p>
               {item.tags.length > 0 && <p className="mt-4 text-[12px] font-semibold text-[#71836a]">{item.tags.map((tag) => `#${tag}`).join(" ")}</p>}
             </button>
-          )) : <div className="col-span-full rounded-[18px] border border-dashed border-[#cfc6b8] p-10 text-center text-sm text-[#686255]">Nothing matches this view. Process a capture into knowledge to begin.</div>}
+          );}) : <div className="col-span-full rounded-[18px] border border-dashed border-[#cfc6b8] bg-[#fbf7ef]/55 p-8 text-center"><EmptyStateVisual variant="memory" /><h2 className="mt-2 font-editorial text-xl text-[#38352f]">Your memory has room to grow.</h2><p className="mx-auto mt-2 max-w-sm text-[13px] leading-6 text-[#686255]">Clarify a capture into a note, decision, or knowledge item and its source will stay attached.</p></div>}
         </div>
       </div>
 

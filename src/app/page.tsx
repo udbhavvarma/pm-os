@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Loader2, LockKeyhole, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import { friendlySignInError } from "@/lib/userErrors";
 import { AuxiliaireMark, IconCapture, IconDecision, IconReview } from "@/components/ui/Icons";
 import { DecisionLoopStrip, DecisionMemoryPreview } from "@/components/ui/ProductVisuals";
@@ -20,12 +21,14 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { signInWithGoogle, user, loading } = useAuth();
+  const { exitDemo } = useDemoMode();
 
   const signIn = async () => {
     setError("");
     setIsLoading(true);
     try {
       await signInWithGoogle();
+      exitDemo();
       router.push("/today");
     } catch (cause) {
       setError(friendlySignInError(cause));
@@ -43,7 +46,7 @@ export default function LandingPage() {
         </Link>
         <div className="flex items-center gap-2">
           <a href="#how" className="hidden rounded-lg px-3 py-2 text-[13px] font-semibold text-[#aaa294] hover:text-white sm:block">How it works</a>
-          {user ? <Link href="/today" className="rounded-xl bg-[#f0e8d8] px-4 py-2.5 text-[13px] font-bold text-[#171713]">Open workspace</Link> : <button type="button" onClick={signIn} disabled={isLoading || loading} className="rounded-xl border border-white/12 px-4 py-2.5 text-[13px] font-bold text-[#ded6c8] hover:bg-white/5 disabled:opacity-50">Sign in</button>}
+          {user ? <Link href="/today" onClick={exitDemo} className="rounded-xl bg-[#f0e8d8] px-4 py-2.5 text-[13px] font-bold text-[#171713]">Open workspace</Link> : <button type="button" onClick={signIn} disabled={isLoading || loading} className="rounded-xl border border-white/12 px-4 py-2.5 text-[13px] font-bold text-[#ded6c8] hover:bg-white/5 disabled:opacity-50">Sign in</button>}
         </div>
       </nav>
 

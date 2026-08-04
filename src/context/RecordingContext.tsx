@@ -1,8 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { friendlyRecordingError } from "@/lib/userErrors";
 import { saveAudio } from "@/lib/audioStore";
+import { processCaptureWithIntelligence } from "@/lib/processCapture";
+import { useDemoMode } from "@/context/DemoModeContext";
 import { useWorkspace } from "./WorkspaceContext";
 
 export type TranscriptSegment = {
@@ -25,7 +27,7 @@ export type CaptureSummaryOutput = {
 export type RecState = {
   isRecording: boolean;
   isPaused: boolean;
-  recordingStatus: "idle" | "listening" | "transcribing" | "generating" | "completed" | "error";
+  recordingStatus: "idle" | "listening" | "uploading" | "transcribing" | "generating" | "completed" | "error";
   timer: number;
   wasAutoPaused: boolean;
   transcriptSegments: TranscriptSegment[];
@@ -46,7 +48,8 @@ export type RecState = {
 const RecordingContext = createContext<RecState | undefined>(undefined);
 
 export function RecordingProvider({ children }: { children: React.ReactNode }) {
-  const { addCapture } = useWorkspace();
+  const { addCapture, updateCapture } = useWorkspace();
+  const { isDemo } = useDemoMode();
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -62,16 +65,17 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef(0);
 
-  const clearTimer = () => {
+  const clearTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = null;
-  };
+  }, []);
 
   useEffect(() => () => {
     clearTimer();
     streamRef.current?.getTracks().forEach((track) => track.stop());
-  }, []);
+  }, [clearTimer]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -93,18 +97,26 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
         if (event.data.size > 0) chunksRef.current.push(event.data);
       };
       recorder.onstop = async () => {
+        let recordingSaved = false;
         try {
           const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
           const audioId = `audio_${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
           const audioUrl = await saveAudio(audioId, audioBlob);
-          await addCapture({
+          const capture = await addCapture({
             inputType: "voice",
-            rawContent: `Voice note · ${formatTime(timer)}`,
+            rawContent: `Voice note · ${formatTime(timerRef.current)}`,
             audioUrl,
+          });
+          recordingSaved = true;
+          await processCaptureWithIntelligence(capture, updateCapture, (stage) => {
+            if (stage === "queued" || stage === "uploading") setRecordingStatus("uploading");
+            else if (stage === "transcribing") setRecordingStatus("transcribing");
+            else if (stage === "structuring") setRecordingStatus("generating");
           });
           setRecordingStatus("completed");
         } catch (error) {
-          setErrorMsg(error instanceof Error ? error.message : "The recording could not be saved.");
+          const message = error instanceof Error ? error.message : "The recording could not be processed.";
+          setErrorMsg(recordingSaved ? `Recording saved. ${message}` : message);
           setRecordingStatus("error");
         } finally {
           streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -113,8 +125,12 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
       };
       recorder.start();
       setTimer(0);
+      timerRef.current = 0;
       clearTimer();
-      intervalRef.current = setInterval(() => setTimer((value) => value + 1), 1000);
+      intervalRef.current = setInterval(() => setTimer((value) => {
+        timerRef.current = value + 1;
+        return timerRef.current;
+      }), 1000);
       setIsPaused(false);
       setIsRecording(true);
       setRecordingStatus("listening");
@@ -124,13 +140,17 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const onStop = () => {
+  const onStop = useCallback(() => {
     if (!recorderRef.current || recorderRef.current.state === "inactive") return;
     clearTimer();
     setIsRecording(false);
     setIsPaused(false);
     recorderRef.current.stop();
-  };
+  }, [clearTimer]);
+
+  useEffect(() => {
+    if (isDemo && isRecording && timer >= 90) onStop();
+  }, [isDemo, isRecording, onStop, timer]);
 
   const onPauseToggle = () => {
     const recorder = recorderRef.current;
@@ -142,7 +162,10 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
     } else if (recorder.state === "paused") {
       recorder.resume();
       setIsPaused(false);
-      intervalRef.current = setInterval(() => setTimer((value) => value + 1), 1000);
+      intervalRef.current = setInterval(() => setTimer((value) => {
+        timerRef.current = value + 1;
+        return timerRef.current;
+      }), 1000);
     }
   };
 
@@ -173,6 +196,7 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
       setTranscriptSegments([]);
       setRecordingStatus("idle");
       setTimer(0);
+      timerRef.current = 0;
     },
     recorderOpen,
     setRecorderOpen,

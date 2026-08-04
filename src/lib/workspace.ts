@@ -15,6 +15,8 @@ export interface SuggestedAction {
   dueAt?: number;
 }
 
+export type CaptureProcessingStage = "queued" | "uploading" | "transcribing" | "structuring" | "ready" | "error";
+
 export interface Capture {
   id: string;
   userId: string;
@@ -27,6 +29,8 @@ export interface Capture {
   aiThemes?: string[];
   aiDecisions?: string[];
   processingStatus?: "idle" | "queued" | "processing" | "ready" | "error";
+  processingStage?: CaptureProcessingStage;
+  processingSource?: "sample" | "live";
   processingError?: string;
   processedAt?: number;
   aiConfidence?: number;

@@ -8,9 +8,9 @@ import SyncIndicator from "@/components/ui/SyncIndicator";
 import { IconCapture } from "@/components/ui/Icons";
 import { EmptyStateVisual } from "@/components/ui/ProductVisuals";
 import { useWorkspace } from "@/context/WorkspaceContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import type { Capture } from "@/lib/workspace";
-import { authedFetch } from "@/lib/api";
-import { loadAudioBlob } from "@/lib/audioStore";
+import { captureProcessingLabel, processCaptureWithIntelligence } from "@/lib/processCapture";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useFeedback } from "@/context/FeedbackContext";
 
@@ -21,6 +21,7 @@ function CaptureContentEditor({ capture, save }: { capture: Capture; save: (valu
 
 export default function CapturePage() {
   const { captures, loaded, updateCapture, deleteCapture, convertCaptureToAction, convertCaptureToItem } = useWorkspace();
+  const { isDemo } = useDemoMode();
   const { notify } = useFeedback();
   const [query, setQuery] = usePersistentState("inbox-query", "");
   const [showArchived, setShowArchived] = usePersistentState("inbox-show-archived", false);
@@ -39,42 +40,13 @@ export default function CapturePage() {
   const processCapture = async (capture: Capture, announce = true) => {
     setProcessingId(capture.id);
     setProcessingError("");
-    await updateCapture(capture.id, { processingStatus: "processing", processingError: undefined });
     try {
-      let input = capture.transcript || capture.rawContent;
-      if (capture.inputType === "voice" && capture.audioUrl && !capture.transcript) {
-        const blob = await loadAudioBlob(capture.audioUrl);
-        if (!blob) throw new Error("The saved recording could not be loaded.");
-        const formData = new FormData();
-        formData.append("audio", new File([blob], "capture.webm", { type: blob.type || "audio/webm" }));
-        const transcriptionResponse = await authedFetch("/api/intelligence/transcribe", { method: "POST", body: formData });
-        const transcription = await transcriptionResponse.json();
-        if (!transcriptionResponse.ok) throw new Error(transcription.error);
-        input = transcription.transcript;
-        await updateCapture(capture.id, { transcript: input });
-      }
-      const response = await authedFetch("/api/intelligence/process-capture", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ input }) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
-      await updateCapture(capture.id, {
-        title: result.title,
-        aiSummary: result.summary,
-        suggestedType: result.suggestedType,
-        suggestedActions: result.actions,
-        aiThemes: result.themes,
-        aiDecisions: result.decisions,
-        aiConfidence: result.confidence,
-        aiUncertainties: result.uncertainties,
-        processingStatus: "ready",
-        processingError: undefined,
-        processedAt: Date.now(),
-      });
+      await processCaptureWithIntelligence(capture, updateCapture);
       if (announce) notify(capture.inputType === "voice" && !capture.transcript ? "Auxiliaire transcribed and enriched the recording." : "Auxiliaire enriched the capture.");
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Auxiliaire could not process this right now. The capture remains saved.";
       setProcessingError(message);
-      await updateCapture(capture.id, { processingStatus: "error", processingError: message });
       return false;
     } finally { setProcessingId(null); }
   };
@@ -101,7 +73,7 @@ export default function CapturePage() {
         <div className="mt-6"><CaptureComposer compact /></div>
 
         <section className="mt-4 flex items-center justify-between gap-4 rounded-[16px] border border-[#d5ddcf] bg-[#eef0e8] px-4 py-3">
-          <div><p className="text-[13px] font-semibold text-[#3d4b39]">Transparent AI triage</p><p className="mt-1 text-[12px] leading-5 text-[#52614d]">Runs only when you ask. Private-workspace content is sent to Groq for processing; nothing moves until you confirm it.</p></div>
+          <div><p className="text-[13px] font-semibold text-[#3d4b39]">Transparent AI triage</p><p className="mt-1 text-[12px] leading-5 text-[#52614d]">{isDemo ? "Fresh captures use live, rate-limited Groq processing. Seeded examples stay clearly labeled as samples." : "Voice recordings process automatically. Other captures run when you ask; nothing moves until you confirm it."}</p></div>
           <button type="button" onClick={triageNewCaptures} disabled={triaging || !captures.some((capture) => capture.status === "inbox" && !capture.aiSummary)} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#71836a] px-3 py-2.5 text-xs font-semibold text-white disabled:opacity-40">{triaging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} Clarify new</button>
         </section>
 
@@ -116,6 +88,8 @@ export default function CapturePage() {
         <div className="mt-4 space-y-3">
           {filtered.length ? filtered.map((capture) => {
             const expanded = selectedId === capture.id;
+            const processingLabel = captureProcessingLabel(capture);
+            const isSeededSample = capture.processingSource === "sample" || (capture.processingSource == null && capture.id.startsWith("demo_"));
             return (
               <article key={capture.id} className="rounded-[18px] border border-[#ded6c8] bg-[#fbf7ef] p-4 @sm:p-5">
                 <button type="button" onClick={() => setSelectedId(expanded ? null : capture.id)} className="flex w-full items-start gap-3 text-left">
@@ -127,7 +101,7 @@ export default function CapturePage() {
                     <span className="mt-1 block line-clamp-2 text-xs leading-5 text-[#5c5649]">{capture.rawContent}</span>
                   </span>
                   <span className="flex items-center gap-2 text-[12px] font-semibold text-[#686255]">
-                    {capture.processingStatus === "processing" ? "processing" : capture.processingStatus === "error" ? "needs retry" : capture.status} <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                    {processingLabel?.toLowerCase() || capture.status} <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
                   </span>
                 </button>
 
@@ -136,8 +110,9 @@ export default function CapturePage() {
                     <label className="text-[12px] font-semibold uppercase tracking-wider text-[#686255]">Raw capture</label>
                     <CaptureContentEditor capture={capture} save={(rawContent) => updateCapture(capture.id, { rawContent })} />
                     {capture.audioUrl && <AudioPlayer url={capture.audioUrl} />}
+                    {capture.processingStatus === "processing" && <div className="mt-3 rounded-xl border border-[#d5ddcf] bg-[#eef0e8] p-3" role="status" aria-live="polite"><div className="flex items-center gap-2 text-[12px] font-bold text-[#4d5e48]"><Loader2 className="h-3.5 w-3.5 animate-spin" /> {processingLabel || "Processing with Auxiliaire"}</div><div className="mt-3 grid grid-cols-4 gap-1 text-center text-[10px] font-semibold text-[#778271]">{["Upload", "Transcribe", "Structure", "Ready"].map((label, index) => { const active = ({ uploading: 0, transcribing: 1, structuring: 2, ready: 3 } as Record<string, number>)[capture.processingStage || ""] ?? -1; return <span key={label} className={index <= active ? "text-[#52614d]" : "text-[#a1aa9c]"}><span className={`mx-auto mb-1 block h-1.5 rounded-full ${index <= active ? "bg-[#71836a]" : "bg-[#cfd6ca]"}`} />{label}</span>; })}</div></div>}
                     {capture.transcript && <div className="mt-3 rounded-xl bg-[#f4efe6] p-3"><p className="text-[12px] font-semibold uppercase tracking-wider text-[#686255]">Transcript</p><p className="mt-2 text-xs leading-5 text-[#4a4740]">{capture.transcript}</p></div>}
-                    {capture.aiSummary && <div className="mt-3 rounded-xl bg-[#eef0e8] p-3"><div className="flex items-center justify-between gap-3"><p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-[#4d5e48]"><Sparkles className="h-3.5 w-3.5" /> Auxiliaire proposal</p>{capture.aiConfidence != null && <span className="rounded-full bg-[#fbf7ef] px-2 py-1 text-[12px] font-bold text-[#52614d]">{capture.aiConfidence}% confidence</span>}</div><p className="mt-2 text-[13px] leading-6 text-[#3d4b39]">{capture.aiSummary}</p>{capture.aiUncertainties?.length ? <div className="mt-3 rounded-lg border border-[#cbd5c4] bg-[#fbf7ef]/70 p-2.5"><p className="text-[12px] font-bold text-[#52614d]">Uncertainty</p><p className="mt-1 text-[12px] leading-5 text-[#657161]">{capture.aiUncertainties.join(" · ")}</p></div> : null}{capture.aiThemes?.length ? <p className="mt-2 text-[12px] font-semibold text-[#61745b]">{capture.aiThemes.map((theme) => `#${theme}`).join(" ")}</p> : null}{capture.processedAt && <p className="mt-2 text-[12px] text-[#657161]">Prepared {new Date(capture.processedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} · Raw capture preserved</p>}</div>}
+                    {capture.aiSummary && <div className="mt-3 rounded-xl bg-[#eef0e8] p-3"><div className="flex flex-wrap items-center justify-between gap-3"><p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-[#4d5e48]"><Sparkles className="h-3.5 w-3.5" /> Auxiliaire proposal {isSeededSample && <span className="rounded-full border border-[#b9c5b3] bg-[#fbf7ef] px-2 py-0.5 text-[10px] tracking-normal text-[#61745b]">Sample result</span>}</p>{capture.aiConfidence != null && <span className="rounded-full bg-[#fbf7ef] px-2 py-1 text-[12px] font-bold text-[#52614d]">{capture.aiConfidence}% confidence</span>}</div><p className="mt-2 text-[13px] leading-6 text-[#3d4b39]">{capture.aiSummary}</p>{capture.aiUncertainties?.length ? <div className="mt-3 rounded-lg border border-[#cbd5c4] bg-[#fbf7ef]/70 p-2.5"><p className="text-[12px] font-bold text-[#52614d]">Uncertainty</p><p className="mt-1 text-[12px] leading-5 text-[#657161]">{capture.aiUncertainties.join(" · ")}</p></div> : null}{capture.aiThemes?.length ? <p className="mt-2 text-[12px] font-semibold text-[#61745b]">{capture.aiThemes.map((theme) => `#${theme}`).join(" ")}</p> : null}{capture.processedAt && <p className="mt-2 text-[12px] text-[#657161]">Prepared {new Date(capture.processedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })} · {isSeededSample ? "Seeded sample" : "Live AI result"} · Raw capture preserved</p>}</div>}
                     {(capture.suggestedActions?.length ?? 0) > 0 && <div className="mt-3 rounded-xl border border-[#d5ddcf] bg-[#eef0e8] p-3"><p className="text-[12px] font-bold uppercase tracking-wider text-[#4d5e48]">Suggested actions</p><div className="mt-2 space-y-2">{capture.suggestedActions?.slice(0, 3).map((suggestion) => <div key={suggestion.title} className="flex items-center justify-between gap-3"><span className="text-xs text-[#3d4b39]">{suggestion.title}</span><button type="button" onClick={async () => { await convertCaptureToAction(capture.id, suggestion.title); notify("Action confirmed and linked to its capture."); }} className="shrink-0 rounded-lg bg-[#fbf7ef] px-2.5 py-1.5 text-[12px] font-semibold text-[#4d5e48]">Add action</button></div>)}</div></div>}
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button type="button" disabled={processingId === capture.id} onClick={() => processCapture(capture)} className="flex items-center gap-1.5 rounded-xl border border-[#71836a]/30 bg-[#eef0e8] px-3 py-2.5 text-xs font-semibold text-[#4d5e48] disabled:opacity-50">{processingId === capture.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} {capture.aiSummary ? "Process again" : capture.inputType === "voice" && !capture.transcript ? "Transcribe & process" : "Process with Auxiliaire"}</button>

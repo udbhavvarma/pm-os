@@ -28,12 +28,14 @@ export default function RecordingDock() {
   const router = useRouter();
 
   const isDesktop = canUseDesktop && viewMode === "desktop";
+  const uploading = rec.recordingStatus === "uploading";
+  const transcribing = rec.recordingStatus === "transcribing";
   const generating = rec.recordingStatus === "generating";
   const completed = rec.recordingStatus === "completed";
   const errored = rec.recordingStatus === "error";
-  const active = rec.isRecording || generating || completed || errored;
+  const active = rec.isRecording || uploading || transcribing || generating || completed || errored;
   const isResult = completed || errored;
-  const isAuxiliaire = false;
+  const isAuxiliaire = uploading || transcribing || generating;
 
   const boundsRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -108,50 +110,68 @@ export default function RecordingDock() {
         left: "0.75rem",
       };
 
-  const ui = generating
+  const ui = uploading
     ? {
         wrap: "bg-[#eef0e8] border-[#d8dfd2]",
         icon: <Loader2 className="h-4.5 w-4.5 animate-spin text-[#71836a]" />,
-        eyebrow: "Turning into notes",
+        eyebrow: "Uploading audio",
         eyebrowClass: "text-[#5c5649]",
-        sub: "Saving...",
+        sub: "Step 1 of 3",
         subMono: false,
       }
-    : completed
+    : transcribing
       ? {
           wrap: "bg-[#eef0e8] border-[#d8dfd2]",
-          icon: <Check className="h-4.5 w-4.5 text-[#71836a]" />,
-          eyebrow: "Capture saved",
-          eyebrowClass: "text-[#5b6b56]",
-          sub: "Tap to view",
+          icon: <Loader2 className="h-4.5 w-4.5 animate-spin text-[#71836a]" />,
+          eyebrow: "Transcribing with Groq",
+          eyebrowClass: "text-[#5c5649]",
+          sub: "Step 2 of 3",
           subMono: false,
         }
-      : errored
+      : generating
         ? {
-            wrap: "bg-[#f6e6e3] border-[#e8c6c0]",
-            icon: <AlertTriangle className="h-4.5 w-4.5 text-[#9b5b54]" />,
-            eyebrow: "Could not save",
-            eyebrowClass: "text-[#9b5b54]",
-            sub: "Tap to retry",
+            wrap: "bg-[#eef0e8] border-[#d8dfd2]",
+            icon: <Loader2 className="h-4.5 w-4.5 animate-spin text-[#71836a]" />,
+            eyebrow: "Structuring the capture",
+            eyebrowClass: "text-[#5c5649]",
+            sub: "Step 3 of 3",
             subMono: false,
           }
-        : rec.isPaused
+        : completed
           ? {
-              wrap: "bg-[#fbf0dd] border-[#ead6b4]",
-              icon: <Mic className="h-4.5 w-4.5 text-[#b9824f]" />,
-              eyebrow: "Recording paused",
-              eyebrowClass: "text-[#5c5649]",
-              sub: rec.formatTime(rec.timer),
-              subMono: true,
+              wrap: "bg-[#eef0e8] border-[#d8dfd2]",
+              icon: <Check className="h-4.5 w-4.5 text-[#71836a]" />,
+              eyebrow: "Recording processed",
+              eyebrowClass: "text-[#5b6b56]",
+              sub: "Tap to view",
+              subMono: false,
             }
-          : {
-              wrap: "bg-[#f6e6e3] border-[#e8c6c0]",
-              icon: <Mic className="h-4.5 w-4.5 animate-pulse text-[#b47a72]" />,
-              eyebrow: "Recording",
-              eyebrowClass: "text-[#5c5649]",
-              sub: rec.formatTime(rec.timer),
-              subMono: true,
-            };
+          : errored
+            ? {
+                wrap: "bg-[#f6e6e3] border-[#e8c6c0]",
+                icon: <AlertTriangle className="h-4.5 w-4.5 text-[#9b5b54]" />,
+                eyebrow: "Processing needs attention",
+                eyebrowClass: "text-[#9b5b54]",
+                sub: "The recording is saved",
+                subMono: false,
+              }
+            : rec.isPaused
+              ? {
+                  wrap: "bg-[#fbf0dd] border-[#ead6b4]",
+                  icon: <Mic className="h-4.5 w-4.5 text-[#b9824f]" />,
+                  eyebrow: "Recording paused",
+                  eyebrowClass: "text-[#5c5649]",
+                  sub: rec.formatTime(rec.timer),
+                  subMono: true,
+                }
+              : {
+                  wrap: "bg-[#f6e6e3] border-[#e8c6c0]",
+                  icon: <Mic className="h-4.5 w-4.5 animate-pulse text-[#b47a72]" />,
+                  eyebrow: "Recording",
+                  eyebrowClass: "text-[#5c5649]",
+                  sub: rec.formatTime(rec.timer),
+                  subMono: true,
+                };
 
   const noDrag = (event: React.PointerEvent) => event.stopPropagation();
 

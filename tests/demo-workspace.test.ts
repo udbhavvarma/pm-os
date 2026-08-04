@@ -14,4 +14,5 @@ test("guided workspace contains a complete evidence-to-outcome story", () => {
   assert.ok(data.items.some((item) => item.decisionCalibration));
   assert.ok(data.items.some((item) => item.webResearch?.sources.length));
   assert.ok(buildReadinessBrief(data).openLoopCount >= 3);
+  assert.ok(data.captures.every((capture) => capture.processingSource === "sample"));
 });

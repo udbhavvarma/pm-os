@@ -58,6 +58,13 @@ export interface CaptureRecord {
 
 const LEGACY_CACHE_KEY = "auxiliaire_secure_vault_key_2026";
 
+function cacheStorage(key: string): Storage {
+  // A guided workspace belongs to its tab, including its recovery points.
+  return key === "workspace_demo" || key === "workspace_recovery_demo"
+    ? window.sessionStorage
+    : window.localStorage;
+}
+
 function decodeLegacyCache(ciphertext: string): string {
   try {
     const raw = decodeURIComponent(escape(atob(ciphertext)));
@@ -68,21 +75,21 @@ function decodeLegacyCache(ciphertext: string): string {
 /** Browser cache only. It is intentionally not described as encrypted storage. */
 export function writeLocalCache<T>(key: string, data: T) {
   if (typeof window === "undefined") return;
-  try { localStorage.setItem(key, JSON.stringify({ version: 2, data })); }
+  try { cacheStorage(key).setItem(key, JSON.stringify({ version: 2, data })); }
   catch (error) { console.error("Failed to save local data:", error); }
 }
 
 export function readLocalCache<T = unknown>(key: string): T | null {
   if (typeof window === "undefined") return null;
   try {
-    const stored = localStorage.getItem(key);
+    const stored = cacheStorage(key).getItem(key);
     if (!stored) return null;
     const parsed = JSON.parse(stored) as { version?: number; data?: T } | T;
     if (parsed && typeof parsed === "object" && "version" in parsed && parsed.version === 2) return parsed.data ?? null;
     return parsed as T;
   } catch {
     try {
-      const stored = localStorage.getItem(key);
+      const stored = cacheStorage(key).getItem(key);
       return stored ? JSON.parse(decodeLegacyCache(stored)) as T : null;
     } catch { return null; }
   }

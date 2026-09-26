@@ -1,20 +1,41 @@
 "use client";
 
 import Link from "next/link";
+import "./landing.css";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Loader2, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowDown, ArrowRight, Check, CheckCheck, CircleDot, FileText, Fingerprint, GitBranch, Loader2, LockKeyhole, Mic, MoveUpRight, Plus, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { friendlySignInError } from "@/lib/userErrors";
-import { AuxiliaireMark, IconCapture, IconDecision, IconReview } from "@/components/ui/Icons";
-import { DecisionLoopStrip, DecisionMemoryPreview } from "@/components/ui/ProductVisuals";
+import { AuxiliaireMark } from "@/components/ui/Icons";
 
-const workflow = [
-  { number: "01", title: "Capture the evidence", copy: "Drop a meeting note, research link, voice thought, or unresolved question. The original is saved before AI touches it.", icon: IconCapture },
-  { number: "02", title: "Make the decision legible", copy: "Auxiliaire proposes the decision, assumptions, uncertainties, and concrete follow-ups. You approve every change.", icon: IconDecision },
-  { number: "03", title: "Return to the outcome", copy: "Every action keeps its source. Reviews compare what you expected with what actually happened.", icon: IconReview },
+const stages = [
+  { name: "Evidence", label: "THE ORIGINAL SIGNAL", title: "“It’s the rollout, not the price.”", copy: "Three customer conversations. One recurring objection. Keep the words that changed your thinking.", detail: "Customer research · Original preserved", Icon: FileText },
+  { name: "Decision", label: "A REASON WORTH KEEPING", title: "Lead with guided implementation.", copy: "Test a 30-day rollout package before increasing the annual discount. Make the assumption explicit.", detail: "2 linked sources · Human confirmed", Icon: GitBranch },
+  { name: "Action", label: "THE NEXT CONCRETE MOVE", title: "Model the annual-plan economics.", copy: "A useful next step, connected to the decision that made it matter. No more contextless to-do lists.", detail: "High priority · Source linked", Icon: CircleDot },
+  { name: "Outcome", label: "CLOSE THE LOOP", title: "Was our assumption right?", copy: "Return to the original forecast. Record what happened and carry the lesson into the next decision.", detail: "Expected outcome · Ready to review", Icon: CheckCheck },
 ];
+
+function MemoryStudio() {
+  const [active, setActive] = useState(1);
+  const stage = stages[active];
+  const Icon = stage.Icon;
+  return <div className="memory-studio">
+    <div className="studio-top"><span><AuxiliaireMark className="h-4 w-4" /> THE WORKING MEMORY</span><span className="studio-sample">ILLUSTRATIVE WORKSPACE</span></div>
+    <div className="studio-body">
+      <div className="studio-rail" aria-label="Explore the decision loop">{stages.map((entry, index) => <button key={entry.name} type="button" aria-pressed={active === index} onClick={() => setActive(index)}><entry.Icon size={17} /><span>{entry.name}</span><small>0{index + 1}</small></button>)}</div>
+      <div className="studio-canvas">
+        <div className="studio-caption"><span>ENTERPRISE PRICING</span><span>THREAD / 024</span></div>
+        <div className="studio-evidence"><span><Mic size={14} /> Customer interview</span><p>“We need someone to own the first 30 days.”</p><small>Research note · Linked to this decision</small></div>
+        <div className="studio-connector" aria-hidden="true"><span /><Plus size={12} /><span /></div>
+        <div className="studio-focus" aria-live="polite"><div className="studio-focus-label"><Icon size={17} /><span>{stage.label}</span><span className="studio-dot" /></div><h3>{stage.title}</h3><p>{stage.copy}</p><div className="studio-focus-footer"><span>{stage.detail}</span><ArrowRight size={16} /></div></div>
+        <div className="studio-outcome"><span><Check size={15} /> Context travels with the work.</span><Fingerprint size={22} /></div>
+      </div>
+    </div>
+    <div className="studio-bottom"><span><span className="studio-dot" /> Evidence → decision → action → outcome</span><span>One continuous thread</span></div>
+  </div>;
+}
 
 export default function LandingPage() {
   const router = useRouter();
@@ -22,71 +43,51 @@ export default function LandingPage() {
   const [error, setError] = useState("");
   const { signInWithGoogle, user, loading } = useAuth();
   const { exitDemo } = useDemoMode();
-
   const signIn = async () => {
-    setError("");
-    setIsLoading(true);
-    try {
-      await signInWithGoogle();
-      exitDemo();
-      router.push("/today");
-    } catch (cause) {
-      setError(friendlySignInError(cause));
-      setIsLoading(false);
-    }
+    setError(""); setIsLoading(true);
+    try { await signInWithGoogle(); exitDemo(); router.push("/today"); }
+    catch (cause) { setError(friendlySignInError(cause)); setIsLoading(false); }
   };
 
-  return (
-    <main className="min-h-dvh overflow-hidden bg-[#171713] text-[#f0e8d8]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-[radial-gradient(ellipse_70%_55%_at_50%_10%,rgba(113,131,106,0.18),transparent_72%)]" />
-      <nav className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-5 py-5 md:px-8" aria-label="Public navigation">
-        <Link href="/" className="flex items-center gap-3" aria-label="Auxiliaire home">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#d4c9ae]"><AuxiliaireMark className="h-5 w-5" /></span>
-          <span><span className="block font-editorial text-lg">Auxiliaire</span><span className="block text-[12px] text-[#918a7e]">Decision memory for product builders</span></span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <a href="#how" className="hidden rounded-lg px-3 py-2 text-[13px] font-semibold text-[#aaa294] hover:text-white sm:block">How it works</a>
-          {user ? <Link href="/today" onClick={exitDemo} className="rounded-xl bg-[#f0e8d8] px-4 py-2.5 text-[13px] font-bold text-[#171713]">Open workspace</Link> : <button type="button" onClick={signIn} disabled={isLoading || loading} className="rounded-xl border border-white/12 px-4 py-2.5 text-[13px] font-bold text-[#ded6c8] hover:bg-white/5 disabled:opacity-50">Sign in</button>}
-        </div>
-      </nav>
+  return <main className="aux-landing">
+    <a href="#product" className="aux-skip">Skip to the product</a>
+    <nav className="aux-public-nav" aria-label="Public navigation">
+      <Link href="/" className="aux-wordmark" aria-label="Auxiliaire home"><span className="aux-brand-icon"><AuxiliaireMark className="h-5 w-5" /></span>auxiliaire<span className="aux-wordmark-dot">.</span></Link>
+      <div className="aux-nav-links"><a href="#product">The product</a><a href="#how">The philosophy</a><a href="#ownership">Your data</a></div>
+      {user ? <Link href="/today" onClick={exitDemo} className="aux-nav-cta">Open workspace <MoveUpRight size={15} /></Link> : <button type="button" onClick={signIn} disabled={isLoading || loading} className="aux-nav-cta">Sign in <MoveUpRight size={15} /></button>}
+    </nav>
 
-      <section className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-16 md:px-8 lg:grid-cols-[1.02fr_0.98fr] lg:pb-28 lg:pt-24">
-        <div>
-          <p className="inline-flex items-center gap-2 rounded-full border border-[#71836a]/35 bg-[#71836a]/10 px-3 py-1.5 text-[12px] font-bold text-[#a9bda1]"><Sparkles className="h-3.5 w-3.5" /> Built for product decisions, not generic chat</p>
-          <h1 className="mt-7 max-w-3xl font-editorial text-[46px] leading-[1.04] tracking-[-0.035em] text-[#f5eddd] sm:text-[62px] lg:text-[72px]">Remember why you decided. Learn from what happened.</h1>
-          <p className="mt-6 max-w-xl text-[17px] leading-8 text-[#b9b1a4]">Auxiliaire turns messy research, meeting notes, and voice thoughts into source-linked decisions and next steps—then brings the original evidence back when the outcome is clear.</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/demo" className="group flex items-center justify-center gap-2 rounded-[14px] bg-[#f0e8d8] px-5 py-3.5 text-[14px] font-bold text-[#171713] shadow-xl shadow-black/20">Open the sample workspace <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></Link>
-            {!user && <button type="button" onClick={signIn} disabled={isLoading || loading} className="flex items-center justify-center gap-2 rounded-[14px] border border-white/12 px-5 py-3.5 text-[14px] font-bold text-[#ded6c8] hover:bg-white/5 disabled:opacity-50">{isLoading || loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LockKeyhole className="h-4 w-4" />} Use my private workspace</button>}
-          </div>
-          {error && <p role="alert" className="mt-4 max-w-xl rounded-xl border border-[#b47a72]/25 bg-[#b47a72]/10 px-4 py-3 text-[13px] text-[#e8b4ae]">{error}</p>}
-          <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-[#918a7e]">
-            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8daa82]" /> No sign-in for the demo</span>
-            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8daa82]" /> Human-approved AI changes</span>
-            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#8daa82]" /> Exportable workspace</span>
-          </div>
-        </div>
+    <section className="aux-hero" id="product">
+      <div className="aux-hero-copy"><div className="aux-eyebrow"><span /> A SECOND MEMORY. A CLEARER FIRST MOVE.</div>
+        <h1>Good decisions<br />deserve a<br /><em>longer memory.</em></h1>
+        <p className="aux-hero-description">The thinking behind your work, kept together. Turn scattered notes into connected decisions, useful next steps, and lessons you can actually return to.</p>
+        <div className="aux-hero-actions"><Link href="/demo" className="aux-primary">Explore the workspace <ArrowRight size={18} /></Link><a href="#how" className="aux-text-link">Follow the thread <ArrowDown size={16} /></a></div>
+        <div className="aux-hero-proof"><span><Check size={14} /> No account needed to explore</span><span><LockKeyhole size={13} /> Private by design</span></div>
+        {error && <p role="alert" className="aux-signin-error">{error}</p>}
+      </div>
+      <div className="aux-hero-product"><div className="aux-product-annotation"><span>LESS RECONSTRUCTING. MORE UNDERSTANDING.</span><span>↓</span></div><MemoryStudio /><div className="aux-product-footnote"><span>Built for people who make things.</span><span>And want to remember why.</span></div></div>
+    </section>
 
-        <DecisionMemoryPreview />
-      </section>
+    <div className="aux-signal-strip"><span>YOUR THINKING, IN CONTEXT</span><div><span>Meeting notes</span><Plus size={13} /><span>Customer research</span><Plus size={13} /><span>Decisions</span><Plus size={13} /><span>What happened next</span></div><GitBranch size={20} /></div>
 
-      <section id="how" className="border-y border-white/8 bg-[#1c1b16]">
-        <div className="mx-auto max-w-6xl px-5 py-20 md:px-8">
-          <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#8daa82]">One dependable loop</p>
-          <h2 className="mt-4 max-w-2xl font-editorial text-4xl leading-tight sm:text-5xl">From scattered evidence to a better next decision.</h2>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">{workflow.map(({ number, title, copy, icon: Icon }) => <article key={number} className="rounded-[20px] border border-white/8 bg-white/[0.035] p-5"><div className="flex items-center justify-between"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#71836a]/15 text-[#a9bda1]"><Icon className="h-5 w-5" /></span><span className="font-mono text-[12px] text-[#706b62]">{number}</span></div><h3 className="mt-6 font-editorial text-2xl">{title}</h3><p className="mt-3 text-[14px] leading-7 text-[#aaa294]">{copy}</p></article>)}</div>
-        </div>
-      </section>
+    <section id="how" className="aux-method aux-section">
+      <div className="aux-section-heading"><div><p className="aux-eyebrow">01 / THE COMPOUNDING LOOP</p><h2>Every next step has<br /><em>a backstory.</em></h2></div><p>Keep it. The insight in a conversation shouldn’t disappear when it becomes a task. Neither should the reason you chose one direction over another.</p></div>
+      <div className="aux-method-grid">{[
+        { no: "01", title: "Catch the signal.", copy: "A thought, a meeting, a voice note. Save the original first. Let the structure follow.", label: "CAPTURE → CLARIFY", Icon: Mic },
+        { no: "02", title: "Connect the dots.", copy: "Review what AI suggests. Keep the decisions and actions you choose, with their evidence attached.", label: "CONFIRM → COMMIT", Icon: GitBranch },
+        { no: "03", title: "Come back wiser.", copy: "Revisit the forecast alongside the outcome. Learn from what changed, not just what you remember.", label: "REVIEW → LEARN", Icon: Fingerprint },
+      ].map(({ no, title, copy, label, Icon }) => <article key={no}><div className="aux-method-number"><span>{no}</span><Icon size={25} /></div><h3>{title}</h3><p>{copy}</p><small>{label}</small></article>)}</div>
+    </section>
 
-      <section className="mx-auto grid max-w-6xl gap-8 px-5 py-20 md:px-8 lg:grid-cols-2">
-        <div><p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#8daa82]">Why it is different</p><h2 className="mt-4 font-editorial text-4xl leading-tight">The memory stays attached to the work.</h2><p className="mt-5 text-[15px] leading-8 text-[#aaa294]">Most tools separate notes, tasks, research, and retrospectives. Auxiliaire preserves the chain between them, so a future review can recover the evidence instead of reconstructing it from memory.</p><DecisionLoopStrip /></div>
-        <div className="grid gap-3">
-          {["Actions retain their source capture or decision.", "AI proposes structure; the user approves mutations.", "Forecasts are frozen before outcomes are known.", "Research updates are stored separately from original notes."].map((item) => <div key={item} className="flex gap-3 rounded-[16px] border border-white/8 bg-white/[0.035] p-4 text-[14px] leading-6 text-[#c5beb3]"><Check className="mt-1 h-4 w-4 shrink-0 text-[#8daa82]" /> {item}</div>)}
-        </div>
-      </section>
+    <section className="aux-manifesto"><p className="aux-eyebrow">A PLACE FOR THE THINKING BEHIND THE WORK</p><h2>You have plenty of places<br />to put things.<br /><em>This is where they connect.</em></h2><div className="aux-manifesto-notes"><span><FileText size={18} /> Original evidence stays intact</span><span><Sparkles size={18} /> Suggestions stay yours to accept</span><span><GitBranch size={18} /> Actions keep their context</span></div></section>
 
-      <section className="border-t border-white/8 px-5 py-16 text-center"><h2 className="font-editorial text-4xl">See the complete loop with real sample data.</h2><p className="mx-auto mt-4 max-w-xl text-[14px] leading-7 text-[#aaa294]">Explore a seeded pricing decision, linked research, ranked actions, a due forecast, and a change report. Nothing is written to a shared account.</p><Link href="/demo" className="mt-7 inline-flex items-center gap-2 rounded-[14px] bg-[#f0e8d8] px-5 py-3.5 text-[14px] font-bold text-[#171713]">Launch guided demo <ArrowRight className="h-4 w-4" /></Link></section>
-      <footer className="border-t border-white/8 px-5 py-6 text-center text-[12px] text-[#706b62]">Auxiliaire · Decision memory for product builders · Private workspaces use Firebase and Groq as disclosed in Settings. · © 2026 Udbhav Varma.</footer>
-    </main>
-  );
+    <section id="ownership" className="aux-ownership aux-section"><div><p className="aux-eyebrow">02 / YOUR WORK. YOUR MEMORY.</p><h2>Personal means<br /><em>you stay in control.</em></h2><p>Your workspace should earn your trust in the details: what gets saved, what gets sent, and what you can take with you.</p></div><div className="aux-ownership-list">{[
+      ["01", "AI when you ask.", "Selected content goes to Groq when you use intelligence. The original remains yours."],
+      ["02", "A workspace of your own.", "Private records are scoped to your signed-in account. The guided sample uses separate tab storage."],
+      ["03", "An exit, always.", "Export your records and saved audio. Import a backup or return to a recovery point from Settings."],
+    ].map(([no, title, copy]) => <article key={no}><span>{no}</span><div><h3>{title}</h3><p>{copy}</p></div><MoveUpRight size={18} /></article>)}</div></section>
+
+    <section className="aux-final"><div className="aux-final-mark" aria-hidden="true"><AuxiliaireMark className="h-12 w-12" /></div><p className="aux-eyebrow">YOUR NEXT DECISION STARTS WITH CONTEXT.</p><h2>Pick up the thread.</h2><p>A complete sample workspace. A real decision loop.<br />A few minutes to see how it feels.</p><div className="aux-hero-actions"><Link href="/demo" className="aux-primary">Step inside <ArrowRight size={18} /></Link>{!user && <button type="button" onClick={signIn} disabled={isLoading || loading} className="aux-text-link">{isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LockKeyhole size={15} />} Start a private workspace</button>}</div>{error && <p role="alert" className="aux-signin-error">{error}</p>}</section>
+    <footer className="aux-footer"><Link href="/" className="aux-wordmark">auxiliaire.</Link><span>Decision memory for product builders.</span><span>© 2026 Udbhav Varma</span></footer>
+  </main>;
 }

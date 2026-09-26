@@ -115,7 +115,7 @@ export default function ReviewPage() {
   };
 
   return (
-    <main className="min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
+    <main className="workspace-page min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
       <div className="mx-auto max-w-3xl">
         <header><p className="section-label">One thing at a time</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Review</h1><p className="mt-2 text-sm text-[#5c5649]">{queue.length} item{queue.length === 1 ? "" : "s"} waiting. Stop whenever you feel current.</p></header>
 

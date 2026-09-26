@@ -31,3 +31,11 @@ test("memory search returns source material across object types", () => {
   assert.equal(results[0]?.id, "a");
   assert.ok(results[0]?.score > 0);
 });
+
+test("memory search supports Hindi and Japanese without returning unrelated records", () => {
+  const data = emptyWorkspace();
+  data.actions = [action({ id: "hi", title: "ग्राहक अनुसंधान" }), action({ id: "ja", title: "価格戦略" }), action({ id: "en", title: "Unrelated" })];
+  assert.deepEqual(searchWorkspaceMemory(data, "ग्राहक").map(entry => entry.id), ["hi"]);
+  assert.deepEqual(searchWorkspaceMemory(data, "価格").map(entry => entry.id), ["ja"]);
+  assert.deepEqual(searchWorkspaceMemory(data, "?!"), []);
+});

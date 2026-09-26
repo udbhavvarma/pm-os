@@ -1,11 +1,13 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { collection, deleteDoc, doc, getDocs, limit, orderBy, query, setDoc } from "firebase/firestore";
+import { collection, deleteDoc, deleteField, doc, getDocs, limit, orderBy, query, setDoc } from "firebase/firestore";
+import { remotePatch } from "@/lib/workspacePersistence";
+import { parseWorkspaceBackup } from "@/lib/workspaceBackup";
 import { db } from "@/lib/firebase";
 import { readLocalCache, writeLocalCache, type CaptureRecord } from "@/lib/db";
 import { useAuth } from "@/context/AuthContext";
-import { deleteAudio, exportAudioAttachments, restoreAudioAttachments, type AudioBackupRecord } from "@/lib/audioStore";
+import { deleteAudio, exportAudioAttachments, restoreAudioAttachments } from "@/lib/audioStore";
 import { useFeedback } from "@/context/FeedbackContext";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { buildDemoWorkspace } from "@/lib/demoWorkspace";
@@ -97,6 +99,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     let active = true;
     const cachedValue = readLocalCache<WorkspaceData>(cacheKey);
     const cached = cachedValue ? normalizeWorkspace(cachedValue) : null;
+    // Do not keep another account's records visible while this account loads.
+    if (!cached) {
+      setData(emptyWorkspace());
+      setLoaded(false);
+      setSyncStatus("loading");
+    }
     setBackupCount(readLocalCache<RecoveryPoint[]>(recoveryKey)?.length ?? 0);
     if (cached && active) {
       setData(cached);
@@ -136,16 +144,17 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           dailyStates: dailySnap.docs.map((entry) => entry.data() as DailyState),
           activities: activitySnap?.docs.map((entry) => entry.data() as ActivityEvent) ?? cached?.activities ?? [],
         };
-        const hasRemoteData = Object.values(remote).some((records) => records.length > 0);
-        const next = hasRemoteData ? mergeWorkspaceData(cached ?? emptyWorkspace(), remote) : cached ?? emptyWorkspace();
-        setData(next);
-        writeLocalCache(cacheKey, next);
+        // Captures created while the network request runs must survive hydration.
+        setData(current => {
+          const next = mergeWorkspaceData(current, remote);
+          writeLocalCache(cacheKey, next);
+          return next;
+        });
         setLoaded(true);
         setSyncStatus(navigator.onLine ? "saved" : "offline");
       })
       .catch(() => {
         if (!active) return;
-        setData(cached ?? emptyWorkspace());
         setLoaded(true);
         setSyncStatus(navigator.onLine ? "error" : "offline");
       });
@@ -185,7 +194,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     try {
       const reference = doc(db, "users", user.uid, collectionName, id);
       if (value === undefined) await deleteDoc(reference);
-      else await setDoc(reference, JSON.parse(JSON.stringify(value)) as Record<string, unknown>, { merge: true });
+      else await setDoc(reference, remotePatch(value as Record<string, unknown>, deleteField), { merge: true });
       if (!quiet) setSyncStatus(navigator.onLine ? "saved" : "offline");
     } catch {
       if (!quiet) {
@@ -356,18 +365,15 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [cacheKey, data, user, writeRemote]);
 
   const importWorkspace = useCallback(async (serialized: string) => {
-    const parsed = JSON.parse(serialized) as Record<string, unknown>;
-    const candidate = (parsed.data && typeof parsed.data === "object" ? parsed.data : parsed) as Partial<WorkspaceData>;
-    if (!candidate || !Array.isArray(candidate.captures) || !Array.isArray(candidate.items) || !Array.isArray(candidate.actions)) throw new Error("This is not a valid Auxiliaire backup.");
-    const incoming = normalizeWorkspace(candidate);
-    if (Array.isArray(parsed.audio)) {
-      const replacements = await restoreAudioAttachments(parsed.audio as AudioBackupRecord[]);
+    const { data: incoming, audio } = parseWorkspaceBackup(serialized, userId);
+    if (audio.length) {
+      const replacements = await restoreAudioAttachments(audio);
       incoming.captures = incoming.captures.map((capture) => capture.audioUrl && replacements.has(capture.audioUrl) ? { ...capture, audioUrl: replacements.get(capture.audioUrl) } : capture);
     }
     const next = mergeWorkspaceData(data, incoming);
     await replaceWorkspace(next);
     recordActivity({ type: "imported", entityType: "workspace", label: "Imported a workspace backup", reversible: false });
-  }, [data, recordActivity, replaceWorkspace]);
+  }, [data, recordActivity, replaceWorkspace, userId]);
 
   const restoreLatestBackup = useCallback(async () => {
     const latest = readLocalCache<RecoveryPoint[]>(recoveryKey)?.[0];
@@ -389,11 +395,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     await Promise.all(data.captures.map((capture) => deleteAudio(capture.audioUrl).catch(() => {})));
     await replaceWorkspace(emptyWorkspace());
     try {
-      window.localStorage.removeItem(cacheKey);
-      window.localStorage.removeItem(recoveryKey);
+      const storage = isDemo ? window.sessionStorage : window.localStorage;
+      storage.removeItem(cacheKey);
+      storage.removeItem(recoveryKey);
     } catch { /* The in-memory workspace is already cleared. */ }
     setBackupCount(0);
-  }, [cacheKey, data.captures, recoveryKey, replaceWorkspace]);
+  }, [cacheKey, data.captures, isDemo, recoveryKey, replaceWorkspace]);
 
   const value = useMemo<WorkspaceContextValue>(() => ({
     ...data, loaded, syncStatus, brief: buildReadinessBrief(data), addCapture, updateCapture, deleteCapture,

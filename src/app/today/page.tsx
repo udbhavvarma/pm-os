@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { ArrowRight, Brain, Check, Circle, Gauge, Globe2, Inbox, ListChecks, Loader2, LogOut, PackageOpen, RefreshCw, RotateCcw, Settings, Sparkles, TrendingUp, type LucideIcon } from "lucide-react";
 import CaptureComposer from "@/components/capture/CaptureComposer";
 import ActionWorkbench from "@/components/actions/ActionWorkbench";
+import DecisionTrace from "@/components/today/DecisionTrace";
 import SyncIndicator from "@/components/ui/SyncIndicator";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { buildWorkingSignals, dayId, rankActions } from "@/lib/workspace";
@@ -31,6 +32,9 @@ export default function TodayPage() {
   const deliveredCapsules = items.filter((item) => item.type === "capsule" && !item.archivedAt && !item.capsuleDeliveredAt && (item.capsuleDeliverAt ?? Number.MAX_SAFE_INTEGER) <= today.getTime());
   const focus = actions.find((action) => action.id === state?.focusActionId && action.status === "open") ?? rankedActions[0]?.action ?? brief.focus;
   const focusRecommendation = rankedActions.find((entry) => entry.action.id === focus?.id);
+  const focusDecision = focus?.sourceItemId ? items.find((item) => item.id === focus.sourceItemId) : undefined;
+  const focusCaptureId = focusDecision?.sourceCaptureId ?? focus?.sourceCaptureId;
+  const focusCapture = focusCaptureId ? captures.find((capture) => capture.id === focusCaptureId) : undefined;
   const signals = useMemo(() => buildWorkingSignals({ actions, captures, items, dailyStates, activities: [] }), [actions, captures, dailyStates, items]);
   const hasWorkspaceData = actions.length + captures.length + items.length > 0;
   const clarity = !hasWorkspaceData ? "Start with one piece of evidence." : brief.inboxCount === 0 && brief.reviewCount === 0 ? "You are clear." : brief.inboxCount <= 2 && brief.reviewCount <= 3 ? "You are mostly clear." : "A few things need clarifying.";
@@ -64,7 +68,7 @@ export default function TodayPage() {
   };
 
   return (
-    <main className="min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
+    <main className="workspace-page min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
       <div className="mx-auto max-w-6xl">
         <header className="flex items-start justify-between gap-4">
           <div>
@@ -76,31 +80,34 @@ export default function TodayPage() {
 
         {isDemo && <section className="mt-5 rounded-[18px] border border-[#d8c9b3] bg-[#e9dfcf] p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[13px] font-bold">Guided sample workspace</p><p className="mt-1 text-[12px] text-[#686255]">Your changes stay in this browser tab and never touch a shared account.</p></div><div className="flex gap-2"><button type="button" onClick={resetDemoWorkspace} className="flex items-center gap-1.5 rounded-lg border border-[#cbbda7] px-3 py-2 text-[12px] font-bold"><RefreshCw className="h-3.5 w-3.5" /> Reset sample</button><button type="button" onClick={() => { exitDemo(); router.push("/"); }} className="flex items-center gap-1.5 rounded-lg bg-[#23231f] px-3 py-2 text-[12px] font-bold text-white"><LogOut className="h-3.5 w-3.5" /> Exit</button></div></div><div className="mt-4 grid gap-2 @md:grid-cols-3"><Link href="/inbox" className="rounded-xl border border-[#cbbda7] bg-[#f4eadb] px-3 py-3 text-[12px] font-semibold"><span className="block text-[#8a663e]">1 · Inspect the source</span><span className="mt-1 flex items-center justify-between text-[#38352f]">See the original capture <ArrowRight className="h-3.5 w-3.5" /></span></Link><Link href="/library?q=pricing" className="rounded-xl border border-[#cbbda7] bg-[#f4eadb] px-3 py-3 text-[12px] font-semibold"><span className="block text-[#8a663e]">2 · Trace the decision</span><span className="mt-1 flex items-center justify-between text-[#38352f]">Open linked evidence <ArrowRight className="h-3.5 w-3.5" /></span></Link><Link href="/review" className="rounded-xl border border-[#cbbda7] bg-[#f4eadb] px-3 py-3 text-[12px] font-semibold"><span className="block text-[#8a663e]">3 · Compare the outcome</span><span className="mt-1 flex items-center justify-between text-[#38352f]">Review the forecast <ArrowRight className="h-3.5 w-3.5" /></span></Link></div></section>}
 
-        {hasWorkspaceData && <section className="mt-6 grid gap-3 grid-cols-2 @md:grid-cols-4">
+        {hasWorkspaceData && <section className="workspace-readiness-strip mt-6" aria-label="Workspace readiness">
           {metrics.map(({ value, label, icon: Icon }) => (
-            <div key={label} className="rounded-[16px] border border-[#ded6c8] bg-[#fbf7ef] p-4">
-              <Icon className="h-4 w-4 text-[#71836a]" />
-              <p className="mt-3 font-editorial text-2xl">{value}</p>
-              <p className="mt-1 text-[12px] font-medium text-[#686255]">{label}</p>
+            <div key={label} className="workspace-readiness-item">
+              <Icon aria-hidden="true" />
+              <p>{value}</p>
+              <span>{label}</span>
             </div>
           ))}
         </section>}
 
-        <section className="mt-5 rounded-[22px] bg-[#171713] p-5 text-[#fbf7ef] @md:p-7">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#8daa82]">Start here</p>
-          {focus ? (
-            <div className="mt-3 flex items-center justify-between gap-4">
-              <div>
-                <h2 className="font-editorial text-xl @md:text-2xl">{focus.title}</h2>
-                <p className="mt-2 text-xs text-[#aaa294]">Recommended because {focusRecommendation?.reasons.slice(0, 2).join(" and ") || "it is the clearest next move"}.</p>
+        <section className="workspace-cockpit mt-5">
+          <div className="workspace-focus rounded-[22px] bg-[#171713] p-5 text-[#fbf7ef] @md:p-7">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#8daa82]">Start here</p>
+            {focus ? (
+              <div className="mt-3 flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-editorial text-xl @md:text-2xl">{focus.title}</h2>
+                  <p className="mt-2 text-xs text-[#aaa294]">Recommended because {focusRecommendation?.reasons.slice(0, 2).join(" and ") || "it is the clearest next move"}.</p>
+                </div>
+                <button type="button" onClick={async () => { await updateAction(focus.id, { status: "done", completedAt: Date.now() }); notify("Focus completed."); }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fbf7ef] text-[#171713]" aria-label="Complete focus action">
+                  <Check className="h-4 w-4" />
+                </button>
               </div>
-              <button type="button" onClick={async () => { await updateAction(focus.id, { status: "done", completedAt: Date.now() }); notify("Focus completed."); }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fbf7ef] text-[#171713]" aria-label="Complete focus action">
-                <Check className="h-4 w-4" />
-              </button>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-[#c5beb3]">Clarify one capture into an action, then it will appear here.</p>
-          )}
+            ) : (
+              <p className="mt-3 text-sm text-[#c5beb3]">Clarify one capture into an action, then it will appear here.</p>
+            )}
+          </div>
+          {focus && <DecisionTrace action={focus} capture={focusCapture} decision={focusDecision} />}
         </section>
 
         {deliveredCapsules.length > 0 && <section className="relative mt-5 overflow-hidden rounded-[22px] border border-[#cbbda7] bg-[#e9dfcf] p-5 @md:p-6">

@@ -11,6 +11,7 @@ import { searchWorkspaceMemory, type Item, type ItemType, type MemoryResult } fr
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useFeedback } from "@/context/FeedbackContext";
 import { IconBrief, IconDecision, IconDocument, IconKnowledge, IconWatchlist } from "@/components/ui/Icons";
+import ActionProposalReview from "@/components/actions/ActionProposalReview";
 import { EmptyStateVisual } from "@/components/ui/ProductVisuals";
 
 const filters: { label: string; value: "all" | ItemType }[] = [
@@ -36,6 +37,10 @@ export default function LibraryPage() {
   const initialQuery = typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("q") ?? "";
   const [filter, setFilter] = usePersistentState<"all" | ItemType>("library-filter", "all");
   const [query, setQuery] = usePersistentState("library-query", initialQuery);
+  useEffect(() => {
+    const linkedQuery = new URLSearchParams(window.location.search).get("q");
+    if (linkedQuery !== null) { setQuery(linkedQuery); setFilter("all"); }
+  }, [setFilter, setQuery]);
   const [selected, setSelected] = useState<Item | null>(null);
   const [assistantResult, setAssistantResult] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -91,11 +96,6 @@ export default function LibraryPage() {
         await updateItem(selected.id, { summary: data.summary, title: data.title || selected.title, type: data.suggestedType || selected.type, tags: data.themes || selected.tags });
         setSelected({ ...selected, summary: data.summary, title: data.title || selected.title, type: data.suggestedType || selected.type, tags: data.themes || selected.tags });
         setAssistantResult(data.summary);
-      } else if (label === "Extract actions") {
-        const data = await authedFetch("/api/intelligence/process-capture", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ input: selected.content }) }).then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error); return body; });
-        for (const action of data.actions ?? []) await addAction(action.title, { sourceItemId: selected.id, dueAt: action.dueAt });
-        if (data.actions?.length) notify(`${data.actions.length} action${data.actions.length === 1 ? "" : "s"} added from this item.`);
-        setAssistantResult(data.actions?.length ? `${data.actions.length} possible action${data.actions.length === 1 ? "" : "s"} added.` : "No clear action was found.");
       } else {
         const defaults: Record<string, string> = {
           "Explain this": "Explain this item clearly and concisely.",
@@ -179,7 +179,7 @@ export default function LibraryPage() {
   };
 
   return (
-    <main className="min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
+    <main className="workspace-page min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
       <div className="mx-auto max-w-6xl">
         <header><p className="section-label">Your durable memory</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Memory</h1><p className="mt-2 text-sm text-[#5c5649]">Preserve the evidence behind decisions. Research and transformation appear when you open an item.</p></header>
 
@@ -224,9 +224,10 @@ export default function LibraryPage() {
             {selected.type !== "capsule" && <div className="mt-5">
               <p className="flex items-center gap-2 text-xs font-semibold"><Sparkles className="h-4 w-4 text-[#71836a]" /> Auxiliaire for this item</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                {["Summarise this", "Extract actions", "Explain this", "Help me decide", "Ask about this item"].map((label) => <button key={label} type="button" disabled={processing} onClick={() => runContextAction(label)} className="rounded-xl border border-[#ded6c8] px-3 py-2.5 text-left text-xs font-semibold text-[#7a7264] disabled:opacity-40">{label}</button>)}
+                {["Summarise this", "Explain this", "Help me decide", "Ask about this item"].map((label) => <button key={label} type="button" disabled={processing} onClick={() => runContextAction(label)} className="rounded-xl border border-[#ded6c8] px-3 py-2.5 text-left text-xs font-semibold text-[#7a7264] disabled:opacity-40">{label}</button>)}
               </div>
               <p className="mt-2 text-[12px] text-[#8a8278]">Your item remains saved if Auxiliaire cannot process it right now.</p>
+              <ActionProposalReview key={selected.id} item={selected} />
               {assistantResult && <div className="mt-3 whitespace-pre-wrap rounded-xl bg-[#eef0e8] p-3 text-xs leading-5 text-[#3d4b39]">{assistantResult}</div>}
             </div>}
 

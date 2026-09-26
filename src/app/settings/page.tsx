@@ -16,33 +16,54 @@ export default function SettingsPage() {
   const { notify } = useFeedback();
   const importInput = useRef<HTMLInputElement>(null);
   const [restoring, setRestoring] = useState(false);
+  const [transferring, setTransferring] = useState(false);
   const [deleteArmed, setDeleteArmed] = useState(false);
 
   const downloadBackup = async () => {
-    const blob = new Blob([await exportWorkspace()], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `auxiliaire-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    notify("Complete workspace backup downloaded, including saved audio.");
+    setTransferring(true);
+    try {
+      const blob = new Blob([await exportWorkspace()], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `auxiliaire-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      notify("Workspace backup downloaded.");
+    } catch {
+      notify("The backup could not be exported. Please retry before clearing any data.", "error");
+    } finally { setTransferring(false); }
+  };
+
+  const restoreBackup = async () => {
+    setRestoring(true);
+    try {
+      const restored = await restoreLatestBackup();
+      notify(restored ? "Latest recovery point restored." : "No recovery point is available.", restored ? "success" : "info");
+    } catch {
+      notify("The recovery point could not be restored. Please retry.", "error");
+    } finally { setRestoring(false); }
   };
 
   const importBackup = async (file?: File) => {
     if (!file) return;
+    setTransferring(true);
     try {
+      if (file.size > 50 * 1024 * 1024) throw new Error("This backup exceeds the 50 MB import limit.");
       await importWorkspace(await file.text());
       notify("Backup imported and merged with your workspace.");
     } catch (error) {
       notify(error instanceof Error ? error.message : "The backup could not be imported.", "error");
     } finally {
+      setTransferring(false);
       if (importInput.current) importInput.current.value = "";
     }
   };
 
   return (
-    <main className="min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
+    <main className="workspace-page min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
       <div className="mx-auto max-w-3xl">
         <header><p className="section-label">Data boundaries and recovery</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Settings</h1><p className="mt-2 text-sm text-[#5c5649]">See where your memory lives, what AI receives, and how to take it with you.</p></header>
         {isDemo && <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#d8c9b3] bg-[#e9dfcf] p-4"><div><p className="text-[13px] font-bold">Guided sample mode</p><p className="mt-1 text-[12px] text-[#686255]">Sample changes are isolated to this browser tab.</p></div><div className="flex gap-2"><button type="button" onClick={resetDemoWorkspace} className="flex items-center gap-1.5 rounded-lg border border-[#cbbda7] px-3 py-2 text-[12px] font-bold"><RefreshCw className="h-3.5 w-3.5" /> Reset</button><button type="button" onClick={() => { exitDemo(); router.push("/"); }} className="flex items-center gap-1.5 rounded-lg bg-[#23231f] px-3 py-2 text-[12px] font-bold text-white"><LogOut className="h-3.5 w-3.5" /> Exit demo</button></div></section>}
@@ -56,9 +77,9 @@ export default function SettingsPage() {
         <section className="mt-5 rounded-[20px] border border-[#ded6c8] bg-[#fbf7ef] p-5">
           <div className="flex items-start gap-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eef0e8]"><ShieldCheck className="h-5 w-5 text-[#71836a]" /></span><div><p className="section-label">Ownership and recovery</p><h2 className="mt-1 font-editorial text-xl">Your workspace stays portable</h2><p className="mt-2 text-[13px] leading-6 text-[#5c5649]">The version 2 export includes records and saved audio. Imports merge by record ID; local recovery points protect recent edits.</p></div></div>
           <div className="mt-5 grid gap-2 @sm:grid-cols-3">
-            <button type="button" onClick={downloadBackup} className="flex items-center justify-center gap-2 rounded-xl bg-[#23231f] px-3 py-3 text-xs font-semibold text-white"><Download className="h-3.5 w-3.5" /> Export</button>
-            <button type="button" onClick={() => importInput.current?.click()} className="flex items-center justify-center gap-2 rounded-xl border border-[#ded6c8] px-3 py-3 text-xs font-semibold"><Upload className="h-3.5 w-3.5" /> Import</button>
-            <button type="button" disabled={!backupCount || restoring} onClick={async () => { setRestoring(true); const restored = await restoreLatestBackup(); setRestoring(false); notify(restored ? "Latest recovery point restored." : "No recovery point is available.", restored ? "success" : "info"); }} className="flex items-center justify-center gap-2 rounded-xl border border-[#ded6c8] px-3 py-3 text-xs font-semibold disabled:opacity-40"><RotateCcw className={`h-3.5 w-3.5 ${restoring ? "animate-spin" : ""}`} /> Restore ({backupCount})</button>
+            <button type="button" disabled={transferring || restoring} onClick={downloadBackup} className="flex items-center justify-center gap-2 rounded-xl bg-[#23231f] px-3 py-3 text-xs font-semibold text-white"><Download className="h-3.5 w-3.5" /> Export</button>
+            <button type="button" disabled={transferring || restoring} onClick={() => importInput.current?.click()} className="flex items-center justify-center gap-2 rounded-xl border border-[#ded6c8] px-3 py-3 text-xs font-semibold"><Upload className="h-3.5 w-3.5" /> Import</button>
+            <button type="button" disabled={!backupCount || restoring || transferring} onClick={restoreBackup} className="flex items-center justify-center gap-2 rounded-xl border border-[#ded6c8] px-3 py-3 text-xs font-semibold disabled:opacity-40"><RotateCcw className={`h-3.5 w-3.5 ${restoring ? "animate-spin" : ""}`} /> Restore ({backupCount})</button>
             <input ref={importInput} type="file" accept="application/json,.json" onChange={(event) => importBackup(event.target.files?.[0])} className="hidden" />
           </div>
         </section>

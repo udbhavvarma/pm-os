@@ -22,7 +22,7 @@ export default function DesktopHeader() {
   };
 
   return (
-    <div className="relative z-30 flex w-full items-center justify-between gap-4 border-b border-[#e4dbd0] bg-[#fbf7ef] px-7 py-3">
+    <div className="workspace-topbar relative z-30 flex w-full items-center justify-between gap-4 border-b border-[#e4dbd0] bg-[#fbf7ef] px-7 py-3">
       {/* Top readiness line — carries through from mobile */}
       <div className="readiness-line" aria-hidden="true" />
 

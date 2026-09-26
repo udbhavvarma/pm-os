@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Avatar from "@/components/ui/Avatar";
+import { useWorkspace } from "@/context/WorkspaceContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import { useAuth } from "@/context/AuthContext";
 import {
   AuxiliaireMark,
@@ -28,8 +30,11 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, userData, logout } = useAuth();
   const router = useRouter();
+  const { brief } = useWorkspace();
+  const { isDemo, exitDemo } = useDemoMode();
 
   const handleLogout = async () => {
+    if (isDemo) { exitDemo(); router.replace("/"); return; }
     try {
       await logout();
     } finally {
@@ -38,7 +43,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-[#171713] px-4 py-5 text-[#fbf7ef]">
+    <div className="workspace-sidebar flex h-full w-full flex-col bg-[#171713] px-4 py-5 text-[#fbf7ef]">
       {/* Brand */}
       <div className="mb-8 px-1 pt-2">
         <Link href="/today" className="group flex items-center gap-3">
@@ -50,7 +55,7 @@ export default function Sidebar() {
               Auxiliaire
             </h1>
             <p className="mt-0.5 text-[12px] font-medium tracking-wide text-[#7a7264]">
-              Private daily intelligence
+              Your working memory
             </p>
           </div>
         </Link>
@@ -88,6 +93,7 @@ export default function Sidebar() {
                 )}
               />
               <span>{item.label}</span>
+              {(item.href === "/inbox" ? brief.inboxCount : item.href === "/review" ? brief.reviewCount : 0) > 0 && <span className="workspace-nav-count">{item.href === "/inbox" ? brief.inboxCount : brief.reviewCount}</span>}
               <NavPendingIndicator />
             </Link>
           );
@@ -106,16 +112,16 @@ export default function Sidebar() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-semibold text-[#e0d8ca]">
-              {userData?.name || user?.displayName || "Your space"}
+              {isDemo ? "Sample workspace" : userData?.name || user?.displayName || "Your space"}
             </p>
-            <p className="mt-0.5 text-[12px] text-[#7a7264]">Personal, contained, ready.</p>
+            <p className="mt-0.5 text-[12px] text-[#7a7264]">{isDemo ? "Explore the complete loop" : "Personal, contained, ready."}</p>
           </div>
           <Link href="/settings" aria-label="Settings" title="Settings" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] border border-[#fbf7ef]/7 bg-[#fbf7ef]/4 text-[#a09888] transition-colors hover:bg-white/10 hover:text-white"><Settings className="h-3.5 w-3.5" /></Link>
           <button
             type="button"
             onClick={handleLogout}
-            aria-label="Log out"
-            title="Log out"
+            aria-label={isDemo ? "Exit sample" : "Log out"}
+            title={isDemo ? "Exit sample" : "Log out"}
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] border border-[#fbf7ef]/7 bg-[#fbf7ef]/4 text-[#a09888] transition-colors hover:border-[#b47a72]/30 hover:bg-[#b47a72]/10 hover:text-[#e8b4ae]"
           >
             <LogOut className="h-3.5 w-3.5" />

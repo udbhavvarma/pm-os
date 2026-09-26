@@ -255,10 +255,11 @@ export function buildReadinessBrief(data: WorkspaceData, now = Date.now()): Read
   };
 }
 
-const searchableText = (value: string) => value.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
+const searchableText = (value: string) => value.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}\p{M}\s]/gu, " ");
 
 export function searchWorkspaceMemory(data: WorkspaceData, query: string, limit = 8): MemoryResult[] {
-  const terms = searchableText(query).split(/\s+/).filter((term) => term.length > 1);
+  const terms = [...new Set(searchableText(query).split(/\s+/).filter(Boolean))];
+  if (query.trim() && !terms.length) return [];
   const entries: MemoryResult[] = [
     ...data.captures.filter((capture) => capture.status !== "archived").map((capture) => ({
       id: capture.id, kind: "capture" as const, title: capture.title || "Untitled capture",

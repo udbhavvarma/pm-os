@@ -43,26 +43,49 @@ export class GroqProvider implements IntelligenceProvider {
   async processCapture(input: string): Promise<ProcessedCapture> {
     const response = await this.client.chat.completions.create({
       model: this.chatModel,
-      response_format: { type: "json_object" },
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "capture", strict: true,
+          schema: {
+            type: "object", additionalProperties: false,
+            required: ["title", "summary", "suggestedType", "actions", "themes", "decisions", "confidence", "uncertainties"],
+            properties: {
+              title: { type: "string" }, summary: { type: "string" },
+              suggestedType: { type: "string", enum: ["note", "knowledge", "decision", "watchlist"] },
+              actions: { type: "array", items: {
+                type: "object", additionalProperties: false, required: ["title", "dueAt"],
+                properties: { title: { type: "string" }, dueAt: { type: ["number", "null"] } },
+              } },
+              themes: { type: "array", items: { type: "string" } },
+              decisions: { type: "array", items: { type: "string" } },
+              confidence: { type: "number" },
+              uncertainties: { type: "array", items: { type: "string" } },
+            },
+          },
+        },
+      },
       max_completion_tokens: 4096,
       messages: [
         {
           role: "system",
           content: `You are Auxiliaire, a calm personal operating-system assistant. Structure the user's saved capture without inventing facts. Return JSON only with exactly this shape:
-{"title":string,"summary":string,"suggestedType":"note"|"knowledge"|"decision"|"watchlist","actions":[{"title":string,"dueAt"?:number}],"themes":string[],"decisions":string[],"confidence":number,"uncertainties":string[]}
-Use decision only for an explicit choice, commitment, hypothesis, or tradeoff that the user is recording. A future follow-up instruction without a recorded choice is a note with an action. Keep the title short, summary concise, and actions concrete. Extract 1 to 3 concise domain or product themes whenever the capture names a topic; use an empty themes array only when there is genuinely no topic. Express confidence as an integer percentage from 0 to 100. Only include dueAt when the capture states a clear date, as Unix milliseconds.`,
+{"title":string,"summary":string,"suggestedType":"note"|"knowledge"|"decision"|"watchlist","actions":[{"title":string,"dueAt":number|null}],"themes":string[],"decisions":string[],"confidence":number,"uncertainties":string[]}
+Use decision only for an explicit choice, commitment, hypothesis, or tradeoff that the user is recording. A future follow-up instruction without a recorded choice is a note with an action. Keep the title short, summary concise, and actions concrete. Extract 1 to 3 concise domain or product themes whenever the capture names a topic; use an empty themes array only when there is genuinely no topic. Express confidence as an integer percentage from 0 to 100. Use null for dueAt unless the capture states a clear date; when provided, use Unix milliseconds. The current date is ${new Date().toISOString().slice(0, 10)}.`,
         },
         { role: "user", content: input },
       ],
     });
-    const content = response.choices[0]?.message.content || "{}";
+    const choice = response.choices[0];
+    if (choice?.finish_reason !== "stop" || !choice.message.content) throw new Error("Capture response was incomplete. Please retry.");
+    const content = choice.message.content;
     const parsed = JSON.parse(content) as Partial<ProcessedCapture>;
     const allowedTypes: ItemType[] = ["note", "knowledge", "decision", "watchlist"];
     return {
       title: parsed.title?.trim() || "Processed capture",
       summary: parsed.summary?.trim() || input.slice(0, 200),
       suggestedType: allowedTypes.includes(parsed.suggestedType as ItemType) ? parsed.suggestedType as ItemType : "note",
-      actions: Array.isArray(parsed.actions) ? parsed.actions.filter((action) => action?.title?.trim()).map((action) => ({ title: action.title.trim(), dueAt: action.dueAt })) : [],
+      actions: Array.isArray(parsed.actions) ? parsed.actions.filter((action) => action?.title?.trim()).map((action) => ({ title: action.title.trim(), dueAt: typeof action.dueAt === "number" && Number.isFinite(action.dueAt) ? action.dueAt : undefined })) : [],
       themes: Array.isArray(parsed.themes) ? parsed.themes.filter(Boolean).slice(0, 8) : [],
       decisions: Array.isArray(parsed.decisions) ? parsed.decisions.filter(Boolean).slice(0, 8) : [],
       confidence: normalizeConfidence(parsed.confidence),

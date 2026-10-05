@@ -28,7 +28,7 @@ async function main() {
     const result = await provider.processCapture(fixture.input);
     const checks = [
       result.suggestedType === fixture.expectedType,
-      fixture.expectsAction ? result.actions.length > 0 : true,
+      fixture.expectsAction ? result.actions.length > 0 : result.actions.length === 0,
       result.themes.some((theme) => theme.toLowerCase().includes(fixture.requiredTheme)),
       result.confidence > 1 && result.confidence <= 100,
     ];

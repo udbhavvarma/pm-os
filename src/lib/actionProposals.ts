@@ -1,4 +1,4 @@
-import type { Action, SuggestedAction } from "./workspace";
+import type { Action, Capture, SuggestedAction } from "./workspace";
 
 const titleKey = (title: string) => title.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
 
@@ -16,4 +16,11 @@ export function prepareActionProposals(value: unknown, existing: Action[], sourc
     proposals.push({ title, dueAt });
   }
   return proposals;
+}
+
+export function prepareCaptureAction(capture: Capture, title: string | undefined, existing: Action[]): SuggestedAction | null {
+  const suggestion = title ? capture.suggestedActions?.find(entry => titleKey(entry.title) === titleKey(title)) : capture.suggestedActions?.[0];
+  const actionTitle = title || suggestion?.title || capture.title || capture.rawContent.slice(0, 80);
+  if (existing.some(action => action.sourceCaptureId === capture.id && action.status !== "cancelled" && titleKey(action.title) === titleKey(actionTitle))) return null;
+  return { title: actionTitle, dueAt: suggestion?.dueAt };
 }

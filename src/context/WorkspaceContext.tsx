@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { collection, deleteDoc, deleteField, doc, getDocs, limit, orderBy, query, setDoc } from "firebase/firestore";
+import { prepareCaptureAction } from "@/lib/actionProposals";
 import { remotePatch } from "@/lib/workspacePersistence";
 import { parseWorkspaceBackup } from "@/lib/workspaceBackup";
 import { db } from "@/lib/firebase";
@@ -292,11 +293,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const convertCaptureToAction = useCallback(async (id: string, title?: string) => {
     const capture = data.captures.find((entry) => entry.id === id);
     if (!capture) return null;
-    const suggestion = capture.suggestedActions?.[0];
-    const action = await addAction(title || suggestion?.title || capture.title || capture.rawContent.slice(0, 80), { sourceCaptureId: id, dueAt: suggestion?.dueAt });
+    const proposal = prepareCaptureAction(capture, title, data.actions);
+    if (!proposal) return null;
+    const action = await addAction(proposal.title, { sourceCaptureId: id, dueAt: proposal.dueAt });
     await updateCapture(id, { status: "processed" });
     return action;
-  }, [addAction, data.captures, updateCapture]);
+  }, [addAction, data.actions, data.captures, updateCapture]);
 
   const convertCaptureToItem = useCallback(async (id: string, type: ItemType = "knowledge") => {
     const capture = data.captures.find((entry) => entry.id === id);

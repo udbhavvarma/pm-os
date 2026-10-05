@@ -33,7 +33,7 @@ export class GroqProvider implements IntelligenceProvider {
     apiKey: process.env.GROQ_API_KEY || "missing",
     baseURL: "https://api.groq.com/openai/v1",
   });
-  private chatModel = process.env.GROQ_CHAT_MODEL || "llama-3.3-70b-versatile";
+  private chatModel = process.env.GROQ_CHAT_MODEL || "openai/gpt-oss-20b";
   private transcriptionModel = process.env.GROQ_STT_MODEL || "whisper-large-v3-turbo";
 
   async isAvailable() {
@@ -44,6 +44,7 @@ export class GroqProvider implements IntelligenceProvider {
     const response = await this.client.chat.completions.create({
       model: this.chatModel,
       response_format: { type: "json_object" },
+      max_completion_tokens: 4096,
       messages: [
         {
           role: "system",
@@ -101,21 +102,23 @@ Use decision only for an explicit choice, commitment, hypothesis, or tradeoff th
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
-        "Groq-Model-Version": "latest",
       },
       body: JSON.stringify({
-        model: process.env.GROQ_WEB_MODEL || "groq/compound-mini",
+        model: process.env.GROQ_WEB_MODEL || "openai/gpt-oss-20b",
         messages: [
           {
             role: "system",
-            content: "You enrich a private knowledge library with current, verifiable information. Search the web when useful. Clearly separate: What is current, Why it matters, What is worth saving, and Suggested next move. Stay under 350 words, preserve uncertainty, and cite sources inline.",
+            content: "You enrich a private knowledge library with current, verifiable information. Search the web when useful. Clearly separate: What is current, Why it matters, What is worth saving, and Suggested next move. Stay under 350 words, preserve uncertainty, and cite sources as Markdown links with the original webpage URLs. Do not invent URLs.",
           },
           {
             role: "user",
             content: `${input.context ? `Existing library context:\n${input.context}\n\n` : ""}Research request: ${input.query}`,
           },
         ],
-        compound_custom: { tools: { enabled_tools: ["web_search", "visit_website"] } },
+        tools: [{ type: "browser_search" }],
+        tool_choice: "required",
+        reasoning_effort: "low",
+        max_completion_tokens: 4096,
       }),
       signal: AbortSignal.timeout(30_000),
     });

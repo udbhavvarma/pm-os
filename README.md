@@ -36,7 +36,7 @@ Auxiliaire makes that chain the product. AI proposes structure, but the raw inpu
 - Next.js 16 and React 19
 - Firebase Authentication and Firestore
 - IndexedDB audio storage
-- Groq chat completions, Whisper transcription, and Compound web research
+- Groq GPT-OSS chat completions, Whisper transcription, and browser-search research
 - Tailwind CSS 4, Framer Motion, and Lucide
 - Node test runner through `tsx`
 

@@ -89,6 +89,7 @@ export interface Action {
   title: string;
   notes?: string;
   sourceCaptureId?: string;
+  sourceSuggestionTitle?: string;
   sourceItemId?: string;
   status: "open" | "done" | "cancelled";
   priority: "low" | "normal" | "high";

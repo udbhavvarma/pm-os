@@ -18,9 +18,13 @@ export function prepareActionProposals(value: unknown, existing: Action[], sourc
   return proposals;
 }
 
-export function prepareCaptureAction(capture: Capture, title: string | undefined, existing: Action[]): SuggestedAction | null {
+export function prepareCaptureAction(capture: Capture, title: string | undefined, existing: Action[], review?: SuggestedAction): SuggestedAction | null {
   const suggestion = title ? capture.suggestedActions?.find(entry => titleKey(entry.title) === titleKey(title)) : capture.suggestedActions?.[0];
-  const actionTitle = title || suggestion?.title || capture.title || capture.rawContent.slice(0, 80);
-  if (existing.some(action => action.sourceCaptureId === capture.id && action.status !== "cancelled" && titleKey(action.title) === titleKey(actionTitle))) return null;
-  return { title: actionTitle, dueAt: suggestion?.dueAt };
+  const actionTitle = (review ? review.title : title || suggestion?.title || capture.title || capture.rawContent.slice(0, 80)).trim().slice(0,500);
+  if (!actionTitle) return null;
+  const originalTitle = suggestion?.title || title;
+  if (existing.some(action => action.sourceCaptureId === capture.id && action.status !== "cancelled" &&
+    (titleKey(action.title) === titleKey(actionTitle) || (originalTitle && titleKey(action.sourceSuggestionTitle || action.title) === titleKey(originalTitle))))) return null;
+  const dueAt = review ? review.dueAt : suggestion?.dueAt;
+  return { title: actionTitle, dueAt: typeof dueAt === 'number' && Number.isFinite(dueAt) && dueAt > 0 ? dueAt : undefined };
 }

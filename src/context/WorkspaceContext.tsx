@@ -36,7 +36,7 @@ interface WorkspaceContextValue extends WorkspaceData {
   addCapture(input: { inputType: Capture["inputType"]; rawContent: string; audioUrl?: string; transcript?: string }): Promise<Capture>;
   updateCapture(id: string, updates: Partial<Capture>): Promise<void>;
   deleteCapture(id: string): Promise<void>;
-  convertCaptureToAction(id: string, title?: string): Promise<Action | null>;
+  convertCaptureToAction(id: string, title?: string, review?: { title: string; dueAt?: number }): Promise<Action | null>;
   convertCaptureToItem(id: string, type?: ItemType): Promise<Item | null>;
   addAction(title: string, input?: Partial<Action>): Promise<Action>;
   updateAction(id: string, updates: Partial<Action>): Promise<void>;
@@ -290,12 +290,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     if (before) recordActivity({ type: updates.archivedAt ? "archived" : "updated", entityType: "item", entityId: id, label: `Updated “${before.title}”`, before, reversible: true });
   }, [data.items, recordActivity, updateLocal, writeRemote]);
 
-  const convertCaptureToAction = useCallback(async (id: string, title?: string) => {
+  const convertCaptureToAction = useCallback(async (id: string, title?: string, review?: { title: string; dueAt?: number }) => {
     const capture = data.captures.find((entry) => entry.id === id);
     if (!capture) return null;
-    const proposal = prepareCaptureAction(capture, title, data.actions);
+    const proposal = prepareCaptureAction(capture, title, data.actions, review);
     if (!proposal) return null;
-    const action = await addAction(proposal.title, { sourceCaptureId: id, dueAt: proposal.dueAt });
+    const action = await addAction(proposal.title, { sourceCaptureId: id, sourceSuggestionTitle: title || capture.suggestedActions?.[0]?.title, dueAt: proposal.dueAt });
     await updateCapture(id, { status: "processed" });
     return action;
   }, [addAction, data.actions, data.captures, updateCapture]);

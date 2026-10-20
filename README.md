@@ -79,3 +79,7 @@ This requires `GROQ_API_KEY` and records classification, extraction, theme, and 
 - Settings supports complete workspace/account deletion and explains each provider boundary.
 
 See [architecture.md](./architecture.md) for the current system design and [CASE_STUDY.md](./CASE_STUDY.md) for product decisions and trade-offs.
+
+## Action review update — 20 October 2026
+
+Capture suggestions now have editable titles and optional due dates before confirmation. Removing a deadline is explicit. The accepted action retains its source capture and original suggestion title, preventing repeated confirmation even after a title edit. All extracted suggestions are available for review rather than silently truncating the list to three. Browser QA confirmed an edited, deadline-free action appears on Today and the source suggestion becomes unavailable for a second confirmation.

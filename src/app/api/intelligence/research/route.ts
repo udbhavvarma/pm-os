@@ -10,7 +10,7 @@ async function postHandler(request: Request) {
   if (!query?.trim()) return NextResponse.json({ error: "A research question is required." }, { status: 400 });
   if (query.length > 2_000 || (context?.length ?? 0) > 12_000) return NextResponse.json({ error: "The research request is too large." }, { status: 400 });
   const provider = new IntelligenceService().provider();
-  if (!await provider.isAvailable()) return NextResponse.json({ error: "Auxiliaire intelligence is currently unavailable." }, { status: 503 });
+  if (!await provider.isAvailable()) return NextResponse.json({ error: "Web research is unavailable because Groq is not configured." }, { status: 503 });
   try {
     return NextResponse.json(await provider.research({ query: query.trim(), context: context?.trim() }));
   } catch (error) {

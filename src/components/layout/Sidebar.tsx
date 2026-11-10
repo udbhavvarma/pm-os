@@ -114,7 +114,7 @@ export default function Sidebar() {
             <p className="truncate text-[13px] font-semibold text-[#e0d8ca]">
               {isDemo ? "Sample workspace" : userData?.name || user?.displayName || "Your space"}
             </p>
-            <p className="mt-0.5 text-[12px] text-[#7a7264]">{isDemo ? "Explore the complete loop" : "Personal, contained, ready."}</p>
+            <p className="mt-0.5 text-[12px] text-[#7a7264]">{isDemo ? "Sample data in this tab" : "Private workspace"}</p>
           </div>
           <Link href="/settings" aria-label="Settings" title="Settings" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] border border-[#fbf7ef]/7 bg-[#fbf7ef]/4 text-[#a09888] transition-colors hover:bg-white/10 hover:text-white"><Settings className="h-3.5 w-3.5" /></Link>
           <button

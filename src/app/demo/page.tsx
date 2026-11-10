@@ -14,5 +14,5 @@ export default function DemoLauncherPage() {
     router.replace("/today");
   }, [enterDemo, router]);
 
-  return <main className="flex min-h-dvh items-center justify-center bg-[#171713] text-[#f0e8d8]"><div className="flex items-center gap-3 text-sm"><Loader2 className="h-4 w-4 animate-spin text-[#8daa82]" /> Preparing the guided workspace…</div></main>;
+  return <main className="flex min-h-dvh items-center justify-center bg-[#171713] text-[#f0e8d8]"><div className="flex items-center gap-3 text-sm"><Loader2 className="h-4 w-4 animate-spin text-[#8daa82]" /> Loading sample workspace…</div></main>;
 }

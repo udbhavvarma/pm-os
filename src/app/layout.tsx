@@ -15,20 +15,20 @@ export const metadata: Metadata = {
     default: "Auxiliaire — Decision memory for product builders",
     template: "%s · Auxiliaire",
   },
-  description: "Capture the evidence behind decisions, keep every follow-up connected, and return later to see what changed.",
+  description: "Save product evidence, decisions, assumptions, actions, and outcomes in one traceable record.",
   keywords: ["decision log", "product management", "AI memory", "productivity", "knowledge management"],
   authors: [{ name: "Auxiliaire" }],
   creator: "Auxiliaire",
   openGraph: {
     title: "Auxiliaire — Decision memory for product builders",
-    description: "From messy evidence to a source-linked next step—and back to the outcome.",
+    description: "Keep product evidence, decisions, actions, and outcomes connected.",
     type: "website",
     siteName: "Auxiliaire",
   },
   twitter: {
     card: "summary_large_image",
     title: "Auxiliaire — Decision memory for product builders",
-    description: "Capture decisions, preserve their evidence, and learn from what happened next.",
+    description: "Keep product evidence, decisions, actions, and outcomes connected.",
   },
   manifest: "/manifest.webmanifest",
   icons: {

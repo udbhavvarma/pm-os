@@ -150,7 +150,7 @@ export default function RecordingDock() {
             ? {
                 wrap: "bg-[#f6e6e3] border-[#e8c6c0]",
                 icon: <AlertTriangle className="h-4.5 w-4.5 text-[#9b5b54]" />,
-                eyebrow: "Processing needs attention",
+                eyebrow: "Processing failed",
                 eyebrowClass: "text-[#9b5b54]",
                 sub: "The recording is saved",
                 subMono: false,
@@ -225,6 +225,7 @@ export default function RecordingDock() {
               onPointerDown={noDrag}
               onClick={rec.onPauseToggle}
               title={rec.isPaused ? "Resume" : "Pause"}
+              aria-label={rec.isPaused ? "Resume recording" : "Pause recording"}
               className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-[#ded6c8] bg-[#f4efe6] text-[#49483f] transition-colors hover:bg-[#eee6d8] active:scale-95"
             >
               {rec.isPaused ? <Play className="h-4 w-4 translate-x-[1px]" /> : <Pause className="h-4 w-4" />}
@@ -234,6 +235,7 @@ export default function RecordingDock() {
               onPointerDown={noDrag}
               onClick={rec.onStop}
               title="Stop recording"
+              aria-label="Stop and process recording"
               className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-[#9b5b54] text-white shadow-sm transition-colors hover:bg-[#884d47] active:scale-95"
             >
               <Square className="h-4 w-4" />

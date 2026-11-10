@@ -24,7 +24,7 @@ function ReviewSuggestion({capture,suggestion,index}:{capture:Capture;suggestion
     pending.current = true; setBusy(true); setMessage("");
     try {
       const action = await convertCaptureToAction(capture.id,suggestion.title,{title,dueAt});
-      setMessage(action ? "Added to your plan with its original capture attached." : "This suggestion is already in your plan.");
+      setMessage(action ? "Action added with a link to the original capture." : "This action has already been added.");
     } catch { setMessage("Could not add the action. Your edits are still here; please retry."); }
     finally {pending.current = false; setBusy(false);}
   }
@@ -44,8 +44,8 @@ function ReviewSuggestion({capture,suggestion,index}:{capture:Capture;suggestion
 
 export default function CaptureActionReview({capture}:{capture:Capture}) {
   return <section aria-label="Review suggested actions" className="mt-3 rounded-xl border border-[#d5ddcf] bg-[#eef0e8] p-3">
-    <h3 className="text-xs font-bold text-[#3d4b39]">Review before it becomes a commitment</h3>
-    <p className="mt-1 text-xs leading-5 text-[#52694c]">Check the original capture above. Edit the action and keep, change, or remove its deadline before confirming.</p>
+    <h3 className="text-xs font-bold text-[#3d4b39]">Suggested actions</h3>
+    <p className="mt-1 text-xs leading-5 text-[#52694c]">Compare each action with the original capture. Edit the title or due date before adding it.</p>
     {capture.suggestedActions?.map((suggestion,index)=><ReviewSuggestion key={`${index}-${suggestion.title}`} capture={capture} suggestion={suggestion} index={index} />)}
   </section>;
 }

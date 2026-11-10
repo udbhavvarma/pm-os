@@ -11,11 +11,11 @@ async function postHandler(request: Request, user: AuthedUser) {
   const maxLength = user.isAnonymous ? 6_000 : 20_000;
   if (input.length > maxLength) return NextResponse.json({ error: `Capture text must be shorter than ${maxLength.toLocaleString()} characters.` }, { status: 413 });
   const provider = new IntelligenceService().provider();
-  if (!await provider.isAvailable()) return NextResponse.json({ error: "Auxiliaire intelligence is currently unavailable. The capture remains saved." }, { status: 503 });
+  if (!await provider.isAvailable()) return NextResponse.json({ error: "Capture processing is unavailable because Groq is not configured. The capture is still saved." }, { status: 503 });
   try {
     return NextResponse.json(await provider.processCapture(input));
   } catch (error) {
     console.error("Auxiliaire capture processing failed:", error);
-    return NextResponse.json({ error: "Auxiliaire could not process this capture. The original remains saved." }, { status: 502 });
+    return NextResponse.json({ error: "Capture processing failed. The original is still saved; try again." }, { status: 502 });
   }
 }

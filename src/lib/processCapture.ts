@@ -2,6 +2,7 @@
 
 import { authedFetch } from "@/lib/api";
 import { loadAudioBlob } from "@/lib/audioStore";
+import { requestWithRetry } from "@/lib/requestRetry";
 import type { Capture, CaptureProcessingStage, ItemType, SuggestedAction } from "@/lib/workspace";
 
 interface ProcessCaptureResult {
@@ -11,6 +12,7 @@ interface ProcessCaptureResult {
   actions: SuggestedAction[];
   themes: string[];
   decisions: string[];
+  assumptions: string[];
   confidence: number;
   uncertainties: string[];
   error?: string;
@@ -49,21 +51,21 @@ export async function processCaptureWithIntelligence(
       await setStage("transcribing");
       const formData = new FormData();
       formData.append("audio", new File([blob], "capture.webm", { type: blob.type || "audio/webm" }));
-      const response = await authedFetch("/api/intelligence/transcribe", { method: "POST", body: formData });
+      const response = await requestWithRetry(() => authedFetch("/api/intelligence/transcribe", { method: "POST", body: formData }));
       const body = await response.json() as { transcript?: string; error?: string; message?: string };
-      if (!response.ok || !body.transcript?.trim()) throw new Error(responseMessage(body, "Auxiliaire could not transcribe this recording."));
+      if (!response.ok || !body.transcript?.trim()) throw new Error(responseMessage(body, "Transcription failed. The recording is still saved."));
       input = body.transcript.trim();
       await updateCapture(capture.id, { transcript: input });
     }
 
     await setStage("structuring");
-    const response = await authedFetch("/api/intelligence/process-capture", {
+    const response = await requestWithRetry(() => authedFetch("/api/intelligence/process-capture", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ input }),
-    });
+    }));
     const result = await response.json() as ProcessCaptureResult;
-    if (!response.ok) throw new Error(responseMessage(result, "Auxiliaire could not structure this capture."));
+    if (!response.ok) throw new Error(responseMessage(result, "Structuring failed. The original capture is still saved."));
 
     await setStage("ready", {
       title: result.title,
@@ -72,6 +74,7 @@ export async function processCaptureWithIntelligence(
       suggestedActions: result.actions,
       aiThemes: result.themes,
       aiDecisions: result.decisions,
+      aiAssumptions: result.assumptions,
       aiConfidence: result.confidence,
       aiUncertainties: result.uncertainties,
       processedAt: Date.now(),
@@ -79,7 +82,7 @@ export async function processCaptureWithIntelligence(
     });
     return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Auxiliaire could not process this right now. The original remains saved.";
+    const message = error instanceof Error ? error.message : "Processing failed. The original capture is still saved; try again.";
     onStage?.("error");
     await updateCapture(capture.id, { processingStatus: "error", processingStage: "error", processingError: message });
     throw error instanceof Error ? error : new Error(message);
@@ -91,7 +94,7 @@ export function captureProcessingLabel(capture: Pick<Capture, "processingStage" 
     case "queued": return "Queued";
     case "uploading": return "Uploading audio";
     case "transcribing": return "Transcribing with Groq";
-    case "structuring": return "Structuring with Auxiliaire";
+    case "structuring": return "Structuring capture";
     case "ready": return "Ready";
     case "error": return "Needs retry";
     default: return capture.processingStatus === "processing" ? "Processing" : null;

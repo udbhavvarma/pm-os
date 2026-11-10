@@ -23,7 +23,6 @@ export default function DesktopHeader() {
 
   return (
     <div className="workspace-topbar relative z-30 flex w-full items-center justify-between gap-4 border-b border-[#e4dbd0] bg-[#fbf7ef] px-7 py-3">
-      {/* Top readiness line — carries through from mobile */}
       <div className="readiness-line" aria-hidden="true" />
 
       <form onSubmit={submitSearch} className="relative w-full max-w-sm">
@@ -33,8 +32,8 @@ export default function DesktopHeader() {
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search your memory..."
-          aria-label="Search memory"
+          placeholder="Search saved context"
+          aria-label="Search saved context"
           className="w-full rounded-[10px] border border-[#e4dbd0] bg-[#f4efe6] py-2 pl-9 pr-4 text-[12.5px] font-medium text-[#23231f] outline-none transition-all placeholder:text-[#8a8070] focus:border-[#71836a]/50 focus:bg-[#fffaf3] focus:ring-2 focus:ring-[#71836a]/8"
         />
       </form>

@@ -8,6 +8,7 @@ export interface ProcessedCapture {
   actions: SuggestedAction[];
   themes: string[];
   decisions: string[];
+  assumptions: string[];
   confidence: number;
   uncertainties: string[];
 }
@@ -49,7 +50,7 @@ export class GroqProvider implements IntelligenceProvider {
           name: "capture", strict: true,
           schema: {
             type: "object", additionalProperties: false,
-            required: ["title", "summary", "suggestedType", "actions", "themes", "decisions", "confidence", "uncertainties"],
+            required: ["title", "summary", "suggestedType", "actions", "themes", "decisions", "assumptions", "confidence", "uncertainties"],
             properties: {
               title: { type: "string" }, summary: { type: "string" },
               suggestedType: { type: "string", enum: ["note", "knowledge", "decision", "watchlist"] },
@@ -59,6 +60,7 @@ export class GroqProvider implements IntelligenceProvider {
               } },
               themes: { type: "array", items: { type: "string" } },
               decisions: { type: "array", items: { type: "string" } },
+              assumptions: { type: "array", items: { type: "string" } },
               confidence: { type: "number" },
               uncertainties: { type: "array", items: { type: "string" } },
             },
@@ -69,9 +71,9 @@ export class GroqProvider implements IntelligenceProvider {
       messages: [
         {
           role: "system",
-          content: `You are Auxiliaire, a calm personal operating-system assistant. Structure the user's saved capture without inventing facts. Return JSON only with exactly this shape:
-{"title":string,"summary":string,"suggestedType":"note"|"knowledge"|"decision"|"watchlist","actions":[{"title":string,"dueAt":number|null}],"themes":string[],"decisions":string[],"confidence":number,"uncertainties":string[]}
-Use decision only for an explicit choice, commitment, hypothesis, or tradeoff that the user is recording. A future follow-up instruction without a recorded choice is a note with an action. Keep the title short, summary concise, and actions concrete. Extract 1 to 3 concise domain or product themes whenever the capture names a topic; use an empty themes array only when there is genuinely no topic. Express confidence as an integer percentage from 0 to 100. Use null for dueAt unless the capture states a clear date; when provided, use Unix milliseconds. The current date is ${new Date().toISOString().slice(0, 10)}.`,
+          content: `Structure a product-management capture without inventing facts. Return JSON only with exactly this shape:
+{"title":string,"summary":string,"suggestedType":"note"|"knowledge"|"decision"|"watchlist","actions":[{"title":string,"dueAt":number|null}],"themes":string[],"decisions":string[],"assumptions":string[],"confidence":number,"uncertainties":string[]}
+Use decision only for an explicit choice, commitment, hypothesis, or trade-off. A follow-up without a recorded choice is a note with an action. Use a specific title of at most 10 words. Write a factual summary in 1 to 3 sentences. Avoid motivational language, metaphors, filler, and claims not present in the source. Start action titles with a verb. Extract 1 to 3 specific domain or product themes when a topic is named. Extract assumptions only when the source states or strongly implies a belief the decision depends on. Express confidence as an integer percentage from 0 to 100. Use null for dueAt unless the source states a clear date; when provided, use Unix milliseconds. The current date is ${new Date().toISOString().slice(0, 10)}.`,
         },
         { role: "user", content: input },
       ],
@@ -88,6 +90,7 @@ Use decision only for an explicit choice, commitment, hypothesis, or tradeoff th
       actions: Array.isArray(parsed.actions) ? parsed.actions.filter((action) => action?.title?.trim()).map((action) => ({ title: action.title.trim(), dueAt: typeof action.dueAt === "number" && Number.isFinite(action.dueAt) ? action.dueAt : undefined })) : [],
       themes: Array.isArray(parsed.themes) ? parsed.themes.filter(Boolean).slice(0, 8) : [],
       decisions: Array.isArray(parsed.decisions) ? parsed.decisions.filter(Boolean).slice(0, 8) : [],
+      assumptions: Array.isArray(parsed.assumptions) ? parsed.assumptions.filter(Boolean).slice(0, 8) : [],
       confidence: normalizeConfidence(parsed.confidence),
       uncertainties: Array.isArray(parsed.uncertainties) ? parsed.uncertainties.filter(Boolean).slice(0, 5) : [],
     };
@@ -100,12 +103,12 @@ Use decision only for an explicit choice, commitment, hypothesis, or tradeoff th
       messages: [
         {
           role: "system",
-          content: "You are Auxiliaire. Give calm, concise, useful guidance using only the selected context. Do not invent history or commitments. Prefer a clear recommendation and next step over generic encouragement.",
+          content: "Answer using only the selected context. Put the recommendation first, then cite the supporting record, state uncertainty, and give one next step. Use plain language. Do not use metaphors, motivational filler, generic encouragement, or invented history.",
         },
         { role: "user", content: `Context:\n${input.context.join("\n\n")}\n\nQuestion: ${input.question}` },
       ],
     });
-    return response.choices[0]?.message.content?.trim() || "Auxiliaire did not return a response.";
+    return response.choices[0]?.message.content?.trim() || "No response was returned. Try again.";
   }
 
   async transcribe(audio: File) {
@@ -131,7 +134,7 @@ Use decision only for an explicit choice, commitment, hypothesis, or tradeoff th
         messages: [
           {
             role: "system",
-            content: "You enrich a private knowledge library with current, verifiable information. Search the web when useful. Clearly separate: What is current, Why it matters, What is worth saving, and Suggested next move. Stay under 350 words, preserve uncertainty, and cite sources as Markdown links with the original webpage URLs. Do not invent URLs.",
+            content: "Find current, verifiable information relevant to the saved item. Use headings: Current evidence, Effect on this item, Gaps, and Recommended action. Stay under 350 words. Separate sourced facts from inference, preserve uncertainty, and cite original webpages with Markdown links. Do not invent facts or URLs. Avoid marketing language and generic advice.",
           },
           {
             role: "user",

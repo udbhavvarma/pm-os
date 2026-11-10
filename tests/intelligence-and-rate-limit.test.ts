@@ -7,10 +7,11 @@ import { withIntelligenceAccess } from "../src/lib/serverAuth";
 
 test("demo capture processing exposes confidence and uncertainty", async () => {
   const response = await demoIntelligenceResponse({ path: "/api/intelligence/process-capture", init: { body: JSON.stringify({ input: "We need to decide whether guided rollout should replace the annual discount before Friday." }) } });
-  const result = await response.json() as { confidence: number; uncertainties: string[]; suggestedType: string };
+  const result = await response.json() as { confidence: number; uncertainties: string[]; assumptions: string[]; suggestedType: string };
   assert.equal(result.suggestedType, "decision");
   assert.ok(result.confidence >= 80);
   assert.ok(result.uncertainties.length > 0);
+  assert.ok(result.assumptions.length > 0);
 });
 
 test("rate limiting rejects requests after the configured budget", () => {

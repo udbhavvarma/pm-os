@@ -117,15 +117,15 @@ export default function ReviewPage() {
   return (
     <main className="workspace-page min-h-full bg-[#f4efe6] px-4 pb-24 pt-6 text-[#23231f] @sm:px-5 @md:px-8 @md:py-8">
       <div className="mx-auto max-w-3xl">
-        <header><p className="section-label">One thing at a time</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Review</h1><p className="mt-2 text-sm text-[#5c5649]">{queue.length} item{queue.length === 1 ? "" : "s"} waiting. Stop whenever you feel current.</p></header>
+        <header><p className="section-label">Process one item at a time</p><h1 className="mt-2 font-editorial text-3xl @md:text-4xl">Review</h1><p className="mt-2 text-sm text-[#5c5649]">{queue.length} item{queue.length === 1 ? "" : "s"} waiting. Keep, update, convert, snooze, or archive each one.</p></header>
 
-        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#ded6c8] bg-[#fbf7ef] p-4"><div><p className="text-[13px] font-bold">Advanced reflection</p><p className="mt-1 text-[12px] leading-5 text-[#686255]">Explore decision calibration, memory tensions, change reports, and future-context capsules when you need the deeper layer.</p></div><button type="button" onClick={() => setShowStudio((value) => !value)} className="flex items-center gap-2 rounded-xl border border-[#ded6c8] bg-[#f4efe6] px-3 py-2.5 text-[13px] font-bold"><BrainCircuit className="h-4 w-4 text-[#71836a]" /> {showStudio ? "Close studio" : "Open studio"}</button></section>
+        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#ded6c8] bg-[#fbf7ef] p-4"><div><p className="text-[13px] font-bold">Decision review tools</p><p className="mt-1 text-[12px] leading-5 text-[#686255]">Compare forecasts with outcomes, find conflicting records, review weekly changes, and schedule context for later.</p></div><button type="button" onClick={() => setShowStudio((value) => !value)} className="flex items-center gap-2 rounded-xl border border-[#ded6c8] bg-[#f4efe6] px-3 py-2.5 text-[13px] font-bold"><BrainCircuit className="h-4 w-4 text-[#71836a]" /> {showStudio ? "Hide tools" : "Show tools"}</button></section>
         {showStudio && <ReflectionStudio />}
 
         <section className="mt-5 rounded-[20px] bg-[#171713] p-5 text-[#fbf7ef]">
-          <div className="flex items-start justify-between gap-4"><div><p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.16em] text-[#8daa82]"><CalendarRange className="h-4 w-4" /> Weekly reset</p><h2 className="mt-2 font-editorial text-xl">See the week as a whole</h2><p className="mt-2 text-[12px] leading-5 text-[#aaa294]">{completedThisWeek.length} completed · {unresolvedDecisions.length} unresolved decision{unresolvedDecisions.length === 1 ? "" : "s"} · {livingKnowledgeDue.length} knowledge update{livingKnowledgeDue.length === 1 ? "" : "s"} due</p></div><button type="button" onClick={prepareWeeklyReview} disabled={preparingWeekly} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#fbf7ef] px-3 py-2.5 text-xs font-semibold text-[#171713] disabled:opacity-50">{preparingWeekly ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}{todayState?.weeklyReviewSummary ? "Refresh" : "Prepare"}</button></div>
+          <div className="flex items-start justify-between gap-4"><div><p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.16em] text-[#8daa82]"><CalendarRange className="h-4 w-4" /> Weekly summary</p><h2 className="mt-2 font-editorial text-xl">Completed, unresolved, and due</h2><p className="mt-2 text-[12px] leading-5 text-[#aaa294]">{completedThisWeek.length} completed · {unresolvedDecisions.length} unresolved decision{unresolvedDecisions.length === 1 ? "" : "s"} · {livingKnowledgeDue.length} research update{livingKnowledgeDue.length === 1 ? "" : "s"} due</p></div><button type="button" onClick={prepareWeeklyReview} disabled={preparingWeekly} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#fbf7ef] px-3 py-2.5 text-xs font-semibold text-[#171713] disabled:opacity-50">{preparingWeekly ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}{todayState?.weeklyReviewSummary ? "Update summary" : "Generate summary"}</button></div>
           {todayState?.weeklyReviewSummary && <div className="mt-4 whitespace-pre-wrap rounded-xl bg-[#fbf7ef]/8 p-4 text-xs leading-6 text-[#e4ddd1]">{todayState.weeklyReviewSummary}</div>}
-          {todayState?.weeklyReviewSummary && <p className="mt-3 text-[12px] text-[#8f897f]">Auxiliaire recommends; you approve changes with the review controls below.</p>}
+          {todayState?.weeklyReviewSummary && <p className="mt-3 text-[12px] text-[#8f897f]">This summary does not change your records.</p>}
         </section>
 
         {current ? (
@@ -138,7 +138,7 @@ export default function ReviewPage() {
               {content && <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[#4a4740]">{content}</p>}
 
               <div className="mt-5 rounded-xl bg-[#eef0e8] p-3">
-                <div className="flex items-center justify-between gap-3"><p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-[#5b6b56]"><Sparkles className="h-3.5 w-3.5" /> Auxiliaire</p><button type="button" onClick={askAuxiliaire} disabled={askingAi} className="flex items-center gap-1.5 text-xs font-semibold text-[#4d5e48] disabled:opacity-50">{askingAi && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{aiPrompt ? "Ask again" : "What would you do?"}</button></div>
+                <div className="flex items-center justify-between gap-3"><p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-[#5b6b56]"><Sparkles className="h-3.5 w-3.5" /> Suggested review action</p><button type="button" onClick={askAuxiliaire} disabled={askingAi} className="flex items-center gap-1.5 text-xs font-semibold text-[#4d5e48] disabled:opacity-50">{askingAi && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{aiPrompt ? "Generate again" : "Recommend an action"}</button></div>
                 {aiPrompt && <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-[#3d4b39]">{aiPrompt}</p>}
               </div>
 
@@ -153,7 +153,7 @@ export default function ReviewPage() {
           </section>
         ) : (
           <section className="mt-5 rounded-[24px] border border-[#ded6c8] bg-[#fbf7ef] p-8 text-center">
-            <EmptyStateVisual variant="review" /><h2 className="mt-2 font-editorial text-2xl">You are current.</h2><p className="mt-2 text-sm text-[#5c5649]">Nothing useful needs your attention right now.</p>
+            <EmptyStateVisual variant="review" /><h2 className="mt-2 font-editorial text-2xl">Review queue empty.</h2><p className="mt-2 text-sm text-[#5c5649]">No captures, stale actions, or scheduled items are due.</p>
             {!reviewedToday && <button type="button" onClick={() => updateDailyState({ reviewedAt: Date.now() })} className="mt-6 rounded-xl bg-[#23231f] px-4 py-3 text-xs font-semibold text-white">Complete today’s review</button>}
             {reviewedToday && <p className="mt-5 text-xs font-semibold text-[#71836a]">Today’s review is complete.</p>}
           </section>

@@ -33,7 +33,7 @@ export default function ActionProposalReview({ item }: { item: Item }) {
       if (!response.ok) throw new Error(body.error || "Could not extract actions. Please retry.");
       const next = prepareActionProposals(body.actions, actions, item.id);
       setProposals(next.map(proposal => ({ ...proposal, checked: true })));
-      setMessage(next.length ? "Review and edit these suggestions before adding them to your plan." : "No new actions found. Existing linked actions are kept as they are.");
+      setMessage(next.length ? "Edit or deselect each action before adding it." : "No new actions found. Existing linked actions are unchanged.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not extract actions. Your note is still saved.");
     } finally {
@@ -61,9 +61,9 @@ export default function ActionProposalReview({ item }: { item: Item }) {
 
   return <div className="mt-3 rounded-xl border border-[#d5ddcf] bg-[#eef0e8] p-3">
     <button type="button" disabled={busy} onClick={extract} className="flex items-center gap-2 text-xs font-semibold text-[#3d4b39] disabled:opacity-50">
-      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} {isDemo ? "Preview sample suggestions" : "Suggest next steps"}
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} {isDemo ? "Show sample actions" : "Find actions"}
     </button>
-    {isDemo && <p className="mt-2 text-xs text-[#52694c]">Illustrative suggestions for this guided walkthrough. No live AI request.</p>}
+    {isDemo && <p className="mt-2 text-xs text-[#52694c]">These sample actions are prewritten. This button does not call Groq.</p>}
     {message && <p role="status" className="mt-2 text-xs leading-5 text-[#52694c]">{message}</p>}
     {proposals.length > 0 && <fieldset disabled={busy} className="mt-3 space-y-3">
       <legend className="sr-only">Proposed actions</legend>

@@ -21,9 +21,9 @@ export default function DecisionTrace({ action, capture, decision }: DecisionTra
   const calibration = decision?.decisionCalibration;
   const steps: TraceStep[] = [
     {
-      label: "Original signal",
-      title: capture?.title || "Source context preserved",
-      detail: capture?.aiSummary || capture?.rawContent || "The observation that started this thread.",
+      label: "Source evidence",
+      title: capture?.title || "No source linked",
+      detail: capture?.aiSummary || capture?.rawContent || "Link the note or research that informed this decision.",
       href: capture ? "/inbox" : undefined,
       Icon: FileText,
       state: "source",
@@ -37,15 +37,15 @@ export default function DecisionTrace({ action, capture, decision }: DecisionTra
       state: "decision",
     },
     {
-      label: "Current move",
+      label: "Current action",
       title: action.title,
-      detail: action.notes || "The next concrete move attached to this decision.",
+      detail: action.notes || "The next step linked to this decision.",
       Icon: Target,
       state: "current",
     },
     {
-      label: "Return point",
-      title: calibration?.expectedOutcome || "Record what changed",
+      label: "Expected result",
+      title: calibration?.expectedOutcome || "No forecast recorded",
       detail: calibration ? `${calibration.confidence}% confidence · ${calibration.assumptions.length} assumptions to test` : "Close the loop when the outcome becomes visible.",
       href: decision ? "/review" : undefined,
       Icon: CheckCircle2,
@@ -57,8 +57,8 @@ export default function DecisionTrace({ action, capture, decision }: DecisionTra
     <section className="decision-trace" aria-labelledby="decision-trace-title">
       <header className="decision-trace-header">
         <div>
-          <p>Context chain</p>
-          <h2 id="decision-trace-title">Why this move matters.</h2>
+          <p>Decision trace</p>
+          <h2 id="decision-trace-title">Source, decision, action, result</h2>
         </div>
         <span>{steps.filter((step) => step.title).length} linked steps</span>
       </header>

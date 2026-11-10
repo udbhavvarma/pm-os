@@ -12,11 +12,11 @@ async function postHandler(request: Request, user: AuthedUser) {
   const maxSizeMb = user.isAnonymous ? 5 : 25;
   if (audio.size > maxSizeMb * 1024 * 1024) return NextResponse.json({ error: `Audio must be smaller than ${maxSizeMb} MB.` }, { status: 413 });
   const provider = new IntelligenceService().provider();
-  if (!await provider.isAvailable()) return NextResponse.json({ error: "Auxiliaire intelligence is currently unavailable. The recording remains saved." }, { status: 503 });
+  if (!await provider.isAvailable()) return NextResponse.json({ error: "Transcription is unavailable because Groq is not configured. The recording is still saved." }, { status: 503 });
   try {
     return NextResponse.json({ transcript: await provider.transcribe(audio) });
   } catch (error) {
     console.error("Auxiliaire transcription failed:", error);
-    return NextResponse.json({ error: "Auxiliaire could not transcribe this recording. The audio remains saved." }, { status: 502 });
+    return NextResponse.json({ error: "Transcription failed. The audio is still saved; try again." }, { status: 502 });
   }
 }

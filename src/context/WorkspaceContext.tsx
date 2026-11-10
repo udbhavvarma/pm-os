@@ -305,7 +305,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     if (!capture) return null;
     const item = await addItem({
       type, title: capture.title || "Untitled capture", content: capture.transcript || capture.rawContent,
-      sourceCaptureId: id, summary: capture.aiSummary, tags: capture.aiThemes || [],
+      sourceCaptureId: id, summary: capture.aiSummary, tags: capture.aiThemes || [], assumptions: capture.aiAssumptions || [],
     });
     await updateCapture(id, { status: "processed" });
     return item;

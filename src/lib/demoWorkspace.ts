@@ -11,7 +11,7 @@ export function buildDemoWorkspace(now = Date.now()): WorkspaceData {
         title: "Pricing review notes",
         transcript: "Pricing review: activation is healthy, but three teams stalled when procurement asked for annual terms. Need to compare a 15% annual discount against implementation cost before Friday.",
         aiSummary: "Enterprise demand is present, but annual terms and rollout support are blocking conversion. The decision is whether to lead with a discount or a guided implementation package.",
-        aiThemes: ["pricing", "enterprise", "activation"], aiDecisions: ["Choose the annual enterprise offer"], suggestedType: "decision",
+        aiThemes: ["pricing", "enterprise", "activation"], aiDecisions: ["Choose the annual enterprise offer"], aiAssumptions: ["Setup risk is a stronger objection than price", "The team can support three guided rollouts"], suggestedType: "decision",
         suggestedActions: [{ title: "Model annual-plan economics", dueAt: now + days(1) }],
         processingStatus: "ready", processingStage: "ready", processingSource: "sample", processedAt: now - days(1), aiConfidence: 88,
         aiUncertainties: ["Implementation cost is not quantified in the note."],
@@ -58,12 +58,12 @@ export function buildDemoWorkspace(now = Date.now()): WorkspaceData {
     ],
     dailyStates: [
       { id: dayId(new Date(now)), userId: "demo", focusActionId: "demo_action_model", attentionCapacity: 3,
-        aiGuidance: "Start with the economics model. It turns the pricing discussion into a decision with boundaries. The Priya check can happen next; the procurement summary is useful, but it should not delay the model.", aiGuidanceAt: now - 1_800_000,
-        changeReport: "## What moved\nThe conversation shifted from discount size to implementation risk.\n\n## Recommended adjustment\nTest guided rollout as the primary offer and keep discounting as a bounded fallback.", changeReportAt: now - 1_800_000, updatedAt: now - 1_800_000 },
+        aiGuidance: "Start with the economics model because it tests the cost of the current decision. Confirm rollout capacity with Priya second. The procurement summary can wait.", aiGuidanceAt: now - 1_800_000,
+        changeReport: "## Completed or changed\nThe pricing discussion shifted from discount size to rollout risk.\n\n## Recommended action\nTest guided rollout first and keep the smaller discount as a fallback.", changeReportAt: now - 1_800_000, updatedAt: now - 1_800_000 },
     ],
     activities: [
       { id: "demo_activity_1", userId: "demo", type: "completed", entityType: "action", entityId: "demo_action_complete", label: "Completed “Review activation data by account”", reversible: false, createdAt: now - days(1) },
-      { id: "demo_activity_2", userId: "demo", type: "created", entityType: "item", entityId: "demo_capsule_review", label: "Sealed context for Friday’s pricing review", reversible: false, createdAt: now - days(1) },
+      { id: "demo_activity_2", userId: "demo", type: "created", entityType: "item", entityId: "demo_capsule_review", label: "Scheduled context for Friday’s pricing review", reversible: false, createdAt: now - days(1) },
     ],
   };
 }

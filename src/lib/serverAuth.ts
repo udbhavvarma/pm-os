@@ -173,7 +173,7 @@ export function withAuth(handler: AuthedHandler) {
     const route = requestRoute(req);
 
     const rate = consumeRateLimit(`${user.uid}:${route}`, route.includes("research") || route.includes("transcribe") ? 12 : 60);
-    if (!rate.allowed) return NextResponse.json({ error: "Too many requests", message: "Auxiliaire needs a short pause before the next AI request." }, { status: 429, headers: { ...CORS_HEADERS, "Retry-After": String(rate.retryAfter) } });
+    if (!rate.allowed) return NextResponse.json({ error: "Too many requests", message: `AI request limit reached. Try again in ${rate.retryAfter} seconds.` }, { status: 429, headers: { ...CORS_HEADERS, "Retry-After": String(rate.retryAfter) } });
 
     try {
       const response = await handler(req, user);

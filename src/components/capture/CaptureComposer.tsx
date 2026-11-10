@@ -21,7 +21,7 @@ export default function CaptureComposer({ compact = false }: { compact?: boolean
     const inputType = /^https?:\/\/\S+$/i.test(rawContent) ? "link" : "text";
     await addCapture({ inputType, rawContent });
     setContent("");
-    notify("Captured. It is ready to clarify.");
+    notify("Capture saved.");
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1800);
   };
@@ -29,17 +29,17 @@ export default function CaptureComposer({ compact = false }: { compact?: boolean
   return (
     <div className="rounded-[20px] border border-[#ded6c8] bg-[#fbf7ef] p-3 shadow-sm @sm:p-4">
       <form onSubmit={submit}>
-        <label htmlFor="universal-capture" className="sr-only">Capture anything</label>
+        <label htmlFor="universal-capture" className="sr-only">Add evidence or a note</label>
         <textarea
           id="universal-capture"
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          placeholder="Drop a thought, task, question, or link…"
+          placeholder="Paste a note, customer quote, question, or link"
           className={`${compact ? "min-h-20" : "min-h-28"} w-full resize-none bg-transparent px-1 py-1 text-[14px] leading-6 text-[#23231f] outline-none placeholder:text-[#8a8278]`}
         />
         <div className="mt-2 flex items-center justify-between gap-3 border-t border-[#eee6d8] pt-3">
           <div className="flex items-center gap-2 text-[12px] font-medium text-[#7a7264]">
-            <Link2 className="h-3.5 w-3.5" /> Type or paste. Sort it later.
+            <Link2 className="h-3.5 w-3.5" /> Saved exactly as entered.
           </div>
           <div className="flex items-center gap-2">
             <button

@@ -14,11 +14,11 @@ async function postHandler(request: Request) {
     .slice(0, 30)
     .map((value) => value.slice(0, 2_500));
   const provider = new IntelligenceService().provider();
-  if (!await provider.isAvailable()) return NextResponse.json({ error: "Auxiliaire intelligence is currently unavailable." }, { status: 503 });
+  if (!await provider.isAvailable()) return NextResponse.json({ error: "AI processing is unavailable because Groq is not configured." }, { status: 503 });
   try {
     return NextResponse.json({ message: await provider.answer({ question: question.trim(), context: boundedContext }) });
   } catch (error) {
     console.error("Auxiliaire guidance failed:", error);
-    return NextResponse.json({ error: "Auxiliaire could not provide guidance right now." }, { status: 502 });
+    return NextResponse.json({ error: "AI processing failed. Try again." }, { status: 502 });
   }
 }

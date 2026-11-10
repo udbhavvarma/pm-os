@@ -32,6 +32,13 @@ test("memory search returns source material across object types", () => {
   assert.ok(results[0]?.score > 0);
 });
 
+test("memory search includes decision assumptions and outcomes", () => {
+  const data = emptyWorkspace();
+  data.items = [{ id: "decision", userId: "test", type: "decision", title: "Guided rollout", content: "Proceed with rollout support.", tags: [], assumptions: ["Implementation risk outweighs price sensitivity"], decisionCalibration: { expectedOutcome: "Two accounts accept annual terms", assumptions: [], confidence: 70, reviewAt: now }, createdAt: now, updatedAt: now }];
+  assert.equal(searchWorkspaceMemory(data, "price sensitivity")[0]?.id, "decision");
+  assert.equal(searchWorkspaceMemory(data, "annual terms")[0]?.id, "decision");
+});
+
 test("memory search supports Hindi and Japanese without returning unrelated records", () => {
   const data = emptyWorkspace();
   data.actions = [action({ id: "hi", title: "ग्राहक अनुसंधान" }), action({ id: "ja", title: "価格戦略" }), action({ id: "en", title: "Unrelated" })];

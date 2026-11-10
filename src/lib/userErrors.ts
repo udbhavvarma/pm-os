@@ -42,7 +42,7 @@ export function friendlyRecordingError(err: unknown): string {
     msg.includes("requires") ||
     msg.includes("no audio input")
   ) {
-    return "We couldn't access a microphone on this device. Check that your mic works and try again.";
+    return "No microphone is available. Check the device connection and try again.";
   }
 
   // Network / connectivity.
@@ -56,16 +56,16 @@ export function friendlyRecordingError(err: unknown): string {
     return "Connection problem. Check your internet and try again.";
   }
 
-  return "We couldn't start recording. Please try again.";
+  return "Recording could not start. Try again.";
 }
 
 /** Friendly message when transcription/summary generation fails after recording. */
 export function friendlySummaryError(err: unknown): string {
   const msg = lower(err);
   if (msg.includes("network") || msg.includes("failed to fetch") || msg.includes("connection") || msg.includes("offline")) {
-    return "Your recording was captured, but we couldn't reach the server to summarize it. Check your connection and try again.";
+    return "The recording was saved, but the server could not be reached for processing. Check your connection and try again.";
   }
-  return "Your recording was captured, but we couldn't generate the summary. Please try again in a moment.";
+  return "The recording was saved, but processing failed. Try again.";
 }
 
 /**
@@ -114,7 +114,7 @@ export function friendlySignInError(err: unknown): string {
     return raw;
   }
 
-  return "Sign-in didn't go through. Please tap Continue with Google again.";
+  return "Sign-in failed. Select Sign in and try again.";
 }
 
 

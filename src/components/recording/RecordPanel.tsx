@@ -35,16 +35,16 @@ export default function RecordPanel({ rootClassName }: { rootClassName?: string 
           <div className="mt-4">
             <Check className="mx-auto h-5 w-5 text-[#71836a]" />
             <h3 className="mt-2 font-semibold">Recording processed</h3>
-            <p className="mt-1 text-xs text-[#5c5649]">The original audio, transcript, and Auxiliaire proposal are ready in Capture.</p>
+            <p className="mt-1 text-xs text-[#5c5649]">The original audio, transcript, and suggested structure are ready in Capture.</p>
             <button type="button" onClick={rec.onReset} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#5c5649]">
               <RotateCcw className="h-3.5 w-3.5" /> Record another
             </button>
           </div>
         ) : (
           <div className="mt-4">
-            <h3 className="font-semibold">{rec.isRecording ? rec.formatTime(rec.timer) : rec.recordingStatus === "uploading" ? "Uploading audio" : rec.recordingStatus === "transcribing" ? "Transcribing with Groq" : rec.recordingStatus === "generating" ? "Structuring with Auxiliaire" : "Voice capture"}</h3>
+            <h3 className="font-semibold">{rec.isRecording ? rec.formatTime(rec.timer) : rec.recordingStatus === "uploading" ? "Uploading audio" : rec.recordingStatus === "transcribing" ? "Transcribing with Groq" : rec.recordingStatus === "generating" ? "Structuring capture" : "Record a voice note"}</h3>
             <p className="mt-1 text-xs leading-5 text-[#5c5649]">
-              {rec.isRecording ? (rec.isPaused ? "Paused. Your audio is safe." : "Recording locally…") : processing ? "Your recording is saved. Keep this open or continue using the app while AI finishes." : "Stop when you are done; transcription and structuring begin automatically."}
+              {rec.isRecording ? (rec.isPaused ? "Paused. The recording is kept on this device." : "Recording on this device…") : processing ? "The recording is saved. You can continue using the app while processing finishes." : "When you stop, the audio is sent to Groq for transcription and structuring."}
             </p>
           </div>
         )}
@@ -55,7 +55,7 @@ export default function RecordPanel({ rootClassName }: { rootClassName?: string 
               {rec.isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} {rec.isPaused ? "Resume" : "Pause"}
             </button>
             <button type="button" onClick={rec.onStop} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#23231f] px-3 py-3 text-xs font-semibold text-white">
-              <Square className="h-4 w-4" /> Save
+              <Square className="h-4 w-4" /> Stop and process
             </button>
           </div>
         )}

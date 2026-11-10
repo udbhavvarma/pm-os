@@ -27,7 +27,7 @@ export function DecisionMemoryPreview() {
       <div className="relative h-full rounded-[22px] border border-white/5 bg-[#171713]/58 p-4 backdrop-blur-sm sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-[#d8cfbd]"><AuxiliaireMark className="h-4 w-4 text-[#8daa82]" /><span className="text-[12px] font-bold uppercase tracking-[0.16em]">Decision thread</span></div>
-          <span className="flex items-center gap-1.5 rounded-full border border-[#71836a]/25 bg-[#71836a]/10 px-2.5 py-1 text-[12px] font-bold text-[#a9bda1]"><span className="h-1.5 w-1.5 rounded-full bg-[#8daa82]" /> Live memory</span>
+          <span className="flex items-center gap-1.5 rounded-full border border-[#71836a]/25 bg-[#71836a]/10 px-2.5 py-1 text-[12px] font-bold text-[#a9bda1]"><span className="h-1.5 w-1.5 rounded-full bg-[#8daa82]" /> Linked records</span>
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
@@ -90,9 +90,9 @@ export function DecisionLoopStrip() {
 type EmptyStateVariant = "capture" | "memory" | "review";
 
 const emptyStateCopy: Record<EmptyStateVariant, { label: string; Icon: typeof IconCapture }> = {
-  capture: { label: "An open capture thread", Icon: IconCapture },
-  memory: { label: "A connected memory waiting to grow", Icon: IconKnowledge },
-  review: { label: "A completed review loop", Icon: IconReview },
+  capture: { label: "No saved captures", Icon: IconCapture },
+  memory: { label: "No saved items", Icon: IconKnowledge },
+  review: { label: "No items due for review", Icon: IconReview },
 };
 
 export function EmptyStateVisual({ variant }: { variant: EmptyStateVariant }) {

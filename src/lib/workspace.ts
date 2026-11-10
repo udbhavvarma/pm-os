@@ -28,6 +28,7 @@ export interface Capture {
   aiSummary?: string;
   aiThemes?: string[];
   aiDecisions?: string[];
+  aiAssumptions?: string[];
   processingStatus?: "idle" | "queued" | "processing" | "ready" | "error";
   processingStage?: CaptureProcessingStage;
   processingSource?: "sample" | "live";
@@ -51,6 +52,7 @@ export interface Item {
   title: string;
   content: string;
   summary?: string;
+  assumptions?: string[];
   sourceCaptureId?: string;
   tags: string[];
   reviewAt?: number;
@@ -268,7 +270,7 @@ export function searchWorkspaceMemory(data: WorkspaceData, query: string, limit 
     })),
     ...data.items.filter((item) => !item.archivedAt).map((item) => ({
       id: item.id, kind: "item" as const, title: item.title,
-      content: [item.content, item.summary, item.webResearch?.answer, ...item.tags].filter(Boolean).join("\n"), score: 0,
+      content: [item.content, item.summary, ...(item.assumptions ?? []), ...(item.decisionCalibration?.assumptions ?? []), item.decisionCalibration?.expectedOutcome, item.decisionCalibration?.actualOutcome, item.webResearch?.answer, ...item.tags].filter(Boolean).join("\n"), score: 0,
     })),
     ...data.actions.filter((action) => action.status !== "cancelled").map((action) => ({
       id: action.id, kind: "action" as const, title: action.title,

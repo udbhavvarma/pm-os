@@ -37,7 +37,7 @@ export default function TodayPage() {
   const focusCapture = focusCaptureId ? captures.find((capture) => capture.id === focusCaptureId) : undefined;
   const signals = useMemo(() => buildWorkingSignals({ actions, captures, items, dailyStates, activities: [] }), [actions, captures, dailyStates, items]);
   const hasWorkspaceData = actions.length + captures.length + items.length > 0;
-  const clarity = !hasWorkspaceData ? "Start with one piece of evidence." : brief.inboxCount === 0 && brief.reviewCount === 0 ? "You are clear." : brief.inboxCount <= 2 && brief.reviewCount <= 3 ? "You are mostly clear." : "A few things need clarifying.";
+  const clarity = !hasWorkspaceData ? "Add your first source." : brief.inboxCount === 0 && brief.reviewCount === 0 ? "Nothing needs review." : `${brief.inboxCount + brief.reviewCount} item${brief.inboxCount + brief.reviewCount === 1 ? " needs" : "s need"} attention.`;
   const metrics: { value: number; label: string; icon: LucideIcon }[] = [
     { value: brief.openLoopCount, label: "open actions", icon: ListChecks },
     { value: brief.inboxCount, label: "captures to process", icon: Inbox },
@@ -57,13 +57,13 @@ export default function TodayPage() {
         `Reviews due: ${dueReviews.map((item) => item.title).join("; ") || "none"}`,
         `Current focus: ${focus?.title || "not selected"}`,
       ];
-      const response = await authedFetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: "Give me a short daily perspective: what matters, what can wait, and the cleanest first move. Use at most 120 words.", context }) });
+      const response = await authedFetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: "Create a daily plan in at most 120 words. Name the first action and why it ranks first, list what can wait, and identify any capture or review that blocks progress.", context }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       await updateDailyState({ aiGuidance: result.message, aiGuidanceAt: Date.now() });
-      notify("Today’s perspective is current.");
+      notify("Today’s plan updated.");
     } catch (error) {
-      setGuidanceError(error instanceof Error ? error.message : "Auxiliaire could not generate guidance right now. Your Today view is unchanged.");
+      setGuidanceError(error instanceof Error ? error.message : "The plan could not be generated. Your Today page is unchanged.");
     } finally { setGeneratingGuidance(false); }
   };
 
@@ -92,19 +92,19 @@ export default function TodayPage() {
 
         <section className="workspace-cockpit mt-5">
           <div className="workspace-focus rounded-[22px] bg-[#171713] p-5 text-[#fbf7ef] @md:p-7">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#8daa82]">Start here</p>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#8daa82]">Top priority</p>
             {focus ? (
               <div className="mt-3 flex items-center justify-between gap-4">
                 <div>
                   <h2 className="font-editorial text-xl @md:text-2xl">{focus.title}</h2>
-                  <p className="mt-2 text-xs text-[#aaa294]">Recommended because {focusRecommendation?.reasons.slice(0, 2).join(" and ") || "it is the clearest next move"}.</p>
+                  <p className="mt-2 text-xs text-[#aaa294]">Ranked first because {focusRecommendation?.reasons.slice(0, 2).join(" and ") || "it is the highest-priority open action"}.</p>
                 </div>
-                <button type="button" onClick={async () => { await updateAction(focus.id, { status: "done", completedAt: Date.now() }); notify("Focus completed."); }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fbf7ef] text-[#171713]" aria-label="Complete focus action">
+                <button type="button" onClick={async () => { await updateAction(focus.id, { status: "done", completedAt: Date.now() }); notify("Action completed."); }} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#fbf7ef] text-[#171713]" aria-label={`Complete ${focus.title}`}>
                   <Check className="h-4 w-4" />
                 </button>
               </div>
             ) : (
-              <p className="mt-3 text-sm text-[#c5beb3]">Clarify one capture into an action, then it will appear here.</p>
+              <p className="mt-3 text-sm text-[#c5beb3]">Add an action or create one from a capture.</p>
             )}
           </div>
           {focus && <DecisionTrace action={focus} capture={focusCapture} decision={focusDecision} />}
@@ -112,19 +112,19 @@ export default function TodayPage() {
 
         {deliveredCapsules.length > 0 && <section className="relative mt-5 overflow-hidden rounded-[22px] border border-[#cbbda7] bg-[#e9dfcf] p-5 @md:p-6">
           <div className="pointer-events-none absolute -right-10 -top-16 h-40 w-40 rounded-full bg-[#b9824f]/15 blur-3xl" />
-          <div className="relative flex items-start gap-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#23231f] text-[#f0e8d8]"><PackageOpen className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="section-label">A message from your past self</p><h2 className="mt-2 font-editorial text-2xl">{deliveredCapsules[0].title}</h2><p className="mt-3 whitespace-pre-wrap text-xs leading-6 text-[#4a4740]">{deliveredCapsules[0].content}</p><div className="mt-4 flex flex-wrap gap-2"><Link href={`/library?q=${encodeURIComponent(deliveredCapsules[0].title)}`} className="flex items-center gap-1.5 rounded-xl bg-[#23231f] px-3 py-2.5 text-xs font-semibold text-white">Open full context <ArrowRight className="h-3.5 w-3.5" /></Link><button type="button" onClick={async () => { await updateItem(deliveredCapsules[0].id, { capsuleDeliveredAt: Date.now(), lastReviewedAt: Date.now() }); notify("Capsule opened and acknowledged."); }} className="rounded-xl border border-[#bcae98] px-3 py-2.5 text-xs font-semibold">Acknowledge</button></div></div></div>
+          <div className="relative flex items-start gap-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#23231f] text-[#f0e8d8]"><PackageOpen className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="section-label">Scheduled context</p><h2 className="mt-2 font-editorial text-2xl">{deliveredCapsules[0].title}</h2><p className="mt-3 whitespace-pre-wrap text-xs leading-6 text-[#4a4740]">{deliveredCapsules[0].content}</p><div className="mt-4 flex flex-wrap gap-2"><Link href={`/library?q=${encodeURIComponent(deliveredCapsules[0].title)}`} className="flex items-center gap-1.5 rounded-xl bg-[#23231f] px-3 py-2.5 text-xs font-semibold text-white">Open attached sources <ArrowRight className="h-3.5 w-3.5" /></Link><button type="button" onClick={async () => { await updateItem(deliveredCapsules[0].id, { capsuleDeliveredAt: Date.now(), lastReviewedAt: Date.now() }); notify("Scheduled context marked as reviewed."); }} className="rounded-xl border border-[#bcae98] px-3 py-2.5 text-xs font-semibold">Mark reviewed</button></div></div></div>
         </section>}
 
         <section className="mt-5 rounded-[20px] border border-[#ded6c8] bg-[#fbf7ef] p-4 @sm:p-5">
-          <div className="flex items-start justify-between gap-4"><div><p className="flex items-center gap-2 text-xs font-semibold"><Gauge className="h-4 w-4 text-[#71836a]" /> Attention budget</p><p className="mt-2 max-w-xl text-[12px] leading-5 text-[#686255]">Choose how many meaningful commitments today can realistically hold. Auxiliaire ranks what fits and makes the overflow visible.</p></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-bold ${rankedActions.length > attentionCapacity ? "bg-[#f1e8d9] text-[#8a663e]" : "bg-[#eef0e8] text-[#4d5e48]"}`}>{Math.max(0, rankedActions.length - attentionCapacity)} outside budget</span></div>
-          <div className="mt-4 flex items-center gap-2"><span className="mr-1 text-[12px] font-semibold text-[#8a8278]">Today can hold</span>{[1, 2, 3, 4, 5].map((capacity) => <button key={capacity} type="button" onClick={() => updateDailyState({ attentionCapacity: capacity })} className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-colors ${attentionCapacity === capacity ? "bg-[#23231f] text-white" : "border border-[#ded6c8] text-[#686255] hover:bg-[#f4efe6]"}`}>{capacity}</button>)}</div>
-          {rankedActions.length > attentionCapacity && <p className="mt-3 rounded-xl bg-[#f4efe6] px-3 py-2.5 text-[12px] leading-4 text-[#686255]">Adding another priority means deliberately replacing one of today’s {attentionCapacity}. The remaining work stays safe, but it is not pretending to fit.</p>}
+          <div className="flex items-start justify-between gap-4"><div><p className="flex items-center gap-2 text-xs font-semibold"><Gauge className="h-4 w-4 text-[#71836a]" /> Daily action limit</p><p className="mt-2 max-w-xl text-[12px] leading-5 text-[#686255]">Set the number of actions you plan to finish today. The list below ranks the rest by priority and due date.</p></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-bold ${rankedActions.length > attentionCapacity ? "bg-[#f1e8d9] text-[#8a663e]" : "bg-[#eef0e8] text-[#4d5e48]"}`}>{Math.max(0, rankedActions.length - attentionCapacity)} deferred</span></div>
+          <div className="mt-4 flex items-center gap-2"><span className="mr-1 text-[12px] font-semibold text-[#8a8278]">Action limit</span>{[1, 2, 3, 4, 5].map((capacity) => <button key={capacity} type="button" aria-label={`Set today's action limit to ${capacity}`} onClick={() => updateDailyState({ attentionCapacity: capacity })} className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-colors ${attentionCapacity === capacity ? "bg-[#23231f] text-white" : "border border-[#ded6c8] text-[#686255] hover:bg-[#f4efe6]"}`}>{capacity}</button>)}</div>
+          {rankedActions.length > attentionCapacity && <p className="mt-3 rounded-xl bg-[#f4efe6] px-3 py-2.5 text-[12px] leading-4 text-[#686255]">Only the first {attentionCapacity} action{attentionCapacity === 1 ? "" : "s"} count toward today’s plan. The others remain open.</p>}
         </section>
 
         <section className="mt-5 rounded-[20px] border border-[#d5ddcf] bg-[#eef0e8] p-4 @sm:p-5">
           <div className="flex items-start justify-between gap-4">
-            <div><p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.16em] text-[#5b6b56]"><Sparkles className="h-3.5 w-3.5" /> Auxiliaire perspective</p>{state?.aiGuidance ? <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#354032]">{state.aiGuidance}</p> : <p className="mt-2 text-xs leading-5 text-[#5c6658]">Ask Auxiliaire to interpret today’s current actions, captures, and reviews.</p>}</div>
-            <button type="button" onClick={generateGuidance} disabled={generatingGuidance} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#71836a] px-3 py-2.5 text-xs font-semibold text-white disabled:opacity-50">{generatingGuidance ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} {state?.aiGuidance ? "Refresh" : "Generate"}</button>
+            <div><p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.16em] text-[#5b6b56]"><Sparkles className="h-3.5 w-3.5" /> Suggested plan</p>{state?.aiGuidance ? <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#354032]">{state.aiGuidance}</p> : <p className="mt-2 text-xs leading-5 text-[#5c6658]">Generate a short plan from your open actions, unprocessed captures, and due reviews.</p>}</div>
+            <button type="button" onClick={generateGuidance} disabled={generatingGuidance} className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#71836a] px-3 py-2.5 text-xs font-semibold text-white disabled:opacity-50">{generatingGuidance ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />} {state?.aiGuidance ? "Update plan" : "Generate plan"}</button>
           </div>
           {guidanceError && <p className="mt-3 rounded-lg bg-[#fff1ef] px-3 py-2 text-xs text-[#8d5149]">{guidanceError}</p>}
         </section>
@@ -132,8 +132,8 @@ export default function TodayPage() {
         <div className="mt-5 grid gap-5 @xl:grid-cols-[0.85fr_1.15fr]">
           <section>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-editorial text-xl">Capture anything</h2>
-              <span className="text-[12px] text-[#686255]">Saved before processing</span>
+              <h2 className="font-editorial text-xl">Add evidence or a note</h2>
+              <span className="text-[12px] text-[#686255]">Saved as entered</span>
             </div>
             <CaptureComposer compact />
           </section>
@@ -143,16 +143,16 @@ export default function TodayPage() {
 
         <div className="mt-5 grid gap-4 @lg:grid-cols-2">
           <section className="rounded-[20px] border border-[#ded6c8] bg-[#fbf7ef] p-4 @sm:p-5">
-            <p className="flex items-center gap-2 text-xs font-semibold"><Brain className="h-4 w-4 text-[#71836a]" /> Your working signals</p>
+            <p className="flex items-center gap-2 text-xs font-semibold"><Brain className="h-4 w-4 text-[#71836a]" /> Recent work patterns</p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-[#f4efe6] p-3"><TrendingUp className="h-4 w-4 text-[#71836a]" /><p className="mt-2 font-editorial text-xl">{signals.completionRate == null ? "—" : `${signals.completionRate}%`}</p><p className="mt-1 text-[12px] text-[#686255]">completion rate</p></div>
-              <div className="rounded-xl bg-[#f4efe6] p-3"><p className="text-xs font-semibold text-[#4d5e48]">{signals.preferredCompletionWindow || "Learning"}</p><p className="mt-2 text-[12px] leading-4 text-[#686255]">{signals.preferredCompletionWindow ? "Your most productive completion window" : "Complete a few actions to reveal a pattern"}</p></div>
+              <div className="rounded-xl bg-[#f4efe6] p-3"><p className="text-xs font-semibold text-[#4d5e48]">{signals.preferredCompletionWindow || "Not enough data"}</p><p className="mt-2 text-[12px] leading-4 text-[#686255]">{signals.preferredCompletionWindow ? "Most common completion time" : "Complete more actions to calculate this"}</p></div>
             </div>
-            {(signals.recurringTheme || signals.repeatedlyDeferred > 0) && <p className="mt-3 text-[12px] leading-4 text-[#686255]">{signals.recurringTheme ? `Recurring momentum: #${signals.recurringTheme}. ` : ""}{signals.repeatedlyDeferred ? `${signals.repeatedlyDeferred} item${signals.repeatedlyDeferred === 1 ? " is" : "s are"} repeatedly deferred.` : ""}</p>}
+            {(signals.recurringTheme || signals.repeatedlyDeferred > 0) && <p className="mt-3 text-[12px] leading-4 text-[#686255]">{signals.recurringTheme ? `Most common topic: #${signals.recurringTheme}. ` : ""}{signals.repeatedlyDeferred ? `${signals.repeatedlyDeferred} item${signals.repeatedlyDeferred === 1 ? " is" : "s are"} repeatedly deferred.` : ""}</p>}
           </section>
 
           <section className="rounded-[20px] border border-[#d5ddcf] bg-[#eef0e8] p-4 @sm:p-5">
-            <div className="flex items-start justify-between gap-4"><div><p className="flex items-center gap-2 text-xs font-semibold text-[#3d4b39]"><Globe2 className="h-4 w-4" /> Living knowledge</p><p className="mt-2 text-[12px] leading-5 text-[#657161]">{livingKnowledgeDue.length ? `${livingKnowledgeDue.length} topic${livingKnowledgeDue.length === 1 ? " is" : "s are"} ready for a current-information check.` : "Your watched topics are current."}</p></div><Link href="/library" className="shrink-0 text-xs font-semibold text-[#52694c]">Open Memory</Link></div>
+            <div className="flex items-start justify-between gap-4"><div><p className="flex items-center gap-2 text-xs font-semibold text-[#3d4b39]"><Globe2 className="h-4 w-4" /> Web research updates</p><p className="mt-2 text-[12px] leading-5 text-[#657161]">{livingKnowledgeDue.length ? `${livingKnowledgeDue.length} watched topic${livingKnowledgeDue.length === 1 ? " needs" : "s need"} new research.` : "No watched topics need an update."}</p></div><Link href="/library" className="shrink-0 text-xs font-semibold text-[#52694c]">Open Memory</Link></div>
             {livingKnowledgeDue.slice(0, 2).map((item) => <p key={item.id} className="mt-3 rounded-lg bg-[#fbf7ef]/70 px-3 py-2 text-xs font-semibold text-[#4d5e48]">{item.title}</p>)}
           </section>
         </div>
@@ -160,8 +160,8 @@ export default function TodayPage() {
         {(inbox.length > 0 || dueReviews.length > 0) && (
           <section className="mt-5 rounded-[20px] border border-[#ded6c8] bg-[#fbf7ef] p-4 @sm:p-5">
             <div className="flex items-center justify-between">
-              <div><p className="section-label">Review next</p><h2 className="mt-1 font-editorial text-xl">Reduce future remembering</h2></div>
-              <Link href="/review" className="flex items-center gap-1 text-xs font-semibold text-[#71836a]">Open review <ArrowRight className="h-3.5 w-3.5" /></Link>
+              <div><p className="section-label">Items waiting</p><h2 className="mt-1 font-editorial text-xl">Process captures and due reviews</h2></div>
+              <Link href="/review" className="flex items-center gap-1 text-xs font-semibold text-[#71836a]">Review items <ArrowRight className="h-3.5 w-3.5" /></Link>
             </div>
           </section>
         )}
